@@ -405,22 +405,58 @@
       backPanel.position.set(0, config.wardrobeHeight/2, -config.shelfDepth/2);
       wardrobeGroup.add(backPanel);
 
-      // 걸레받이 (반투명)
+      // 걸레받이 구조 (가구와 동일한 색상)
       const baseboardMaterial = new THREE.MeshPhysicalMaterial({
-        color: 0x8b7355,
+        color: 0xf0f0f0,
         transparent: true,
         opacity: 0.3,
-        roughness: 0.8,
+        roughness: 0.9,
         metalness: 0
       });
       
-      const baseboard = new THREE.Mesh(
-        new THREE.BoxGeometry(outerWidth + 0.01, config.baseboardHeight, config.shelfDepth + 0.01),
+      // 걸레받이 - 좌측
+      const leftBaseboard = new THREE.Mesh(
+        new THREE.BoxGeometry(config.frameThickness, config.baseboardHeight, 0.01),
         baseboardMaterial
       );
-      baseboard.position.set(0, config.baseboardHeight/2 - 0.01, 0);
-      baseboard.castShadow = true;
-      wardrobeGroup.add(baseboard);
+      leftBaseboard.position.set(-config.innerWidth/2 - config.frameThickness/2, config.baseboardHeight/2, config.shelfDepth/2 - 0.005);
+      leftBaseboard.castShadow = true;
+      wardrobeGroup.add(leftBaseboard);
+      
+      // 걸레받이 - 우측
+      const rightBaseboard = new THREE.Mesh(
+        new THREE.BoxGeometry(config.frameThickness, config.baseboardHeight, 0.01),
+        baseboardMaterial
+      );
+      rightBaseboard.position.set(config.innerWidth/2 + config.frameThickness/2, config.baseboardHeight/2, config.shelfDepth/2 - 0.005);
+      rightBaseboard.castShadow = true;
+      wardrobeGroup.add(rightBaseboard);
+      
+      // 걸레받이 - 뒤쪽
+      const backBaseboard = new THREE.Mesh(
+        new THREE.BoxGeometry(outerWidth, config.baseboardHeight, 0.01),
+        baseboardMaterial
+      );
+      backBaseboard.position.set(0, config.baseboardHeight/2, -config.shelfDepth/2 + 0.005);
+      backBaseboard.castShadow = true;
+      wardrobeGroup.add(backBaseboard);
+      
+      // 걸레받이 - 앞쪽 (문 아래)
+      const frontBaseboardLeft = new THREE.Mesh(
+        new THREE.BoxGeometry(outerWidth/2 - 0.002, config.baseboardHeight * 0.6, 0.01),
+        baseboardMaterial
+      );
+      frontBaseboardLeft.position.set(-outerWidth/4, config.baseboardHeight * 0.3, config.shelfDepth/2 - 0.005);
+      frontBaseboardLeft.castShadow = true;
+      wardrobeGroup.add(frontBaseboardLeft);
+      
+      const frontBaseboardRight = new THREE.Mesh(
+        new THREE.BoxGeometry(outerWidth/2 - 0.002, config.baseboardHeight * 0.6, 0.01),
+        baseboardMaterial
+      );
+      frontBaseboardRight.position.set(outerWidth/4, config.baseboardHeight * 0.3, config.shelfDepth/2 - 0.005);
+      frontBaseboardRight.castShadow = true;
+      wardrobeGroup.add(frontBaseboardRight);
 
       // 내부 공간 와이어프레임 (가이드라인)
       const innerGeometry = new THREE.BoxGeometry(
@@ -502,7 +538,7 @@
       }
       
       leftDoorGroup.position.set(-outerWidth/2, config.wardrobeHeight/2, config.shelfDepth/2);
-      leftDoorGroup.rotation.y = Math.PI * 160 / 180; // 160도 열림
+      leftDoorGroup.rotation.y = Math.PI * (180 - 160) / 180; // 160도 열림 (20도 회전)
       wardrobeGroup.add(leftDoorGroup);
 
       // 오른쪽 문 (160도 열림)
@@ -547,7 +583,7 @@
       }
       
       rightDoorGroup.position.set(outerWidth/2, config.wardrobeHeight/2, config.shelfDepth/2);
-      rightDoorGroup.rotation.y = -Math.PI * 160 / 180; // 160도 열림
+      rightDoorGroup.rotation.y = -Math.PI * (180 - 160) / 180; // 160도 열림 (20도 회전)
       wardrobeGroup.add(rightDoorGroup);
     }
 
