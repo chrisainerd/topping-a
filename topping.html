@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
+  <title>Topping - 옷장 맞춤 선반 구성</title>
+  <style>
+    :root{
+      --panel-bg: rgba(255,255,255,.95);
+      --panel-bd: rgba(0,0,0,.12);
+      --text:#111; --sub:#666; --accent:#2b6cb0; 
+      --shadow:0 8px 28px rgba(0,0,0,.15);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html, body { height:100%; overflow:hidden; background:#f5f5f5; color:var(--text); 
+      font-family: system-ui, -apple-system, sans-serif; }
+    canvas { display:block; width:100vw; height:100vh; }
+
+    /* 상단 타이틀 바 */
+    #header {
+      position:fixed; left:20px; top:20px; z-index:40;
+      background:var(--panel-bg); padding:12px 20px; border-radius:12px;
+      border:1px solid var(--panel-bd); backdrop-filter: blur(6px); 
+      box-shadow: var(--shadow);
+    }
+    #header h1 { font-size:18px; font-weight:700; color:#0b1726; }
+    #header p { font-size:12px; color:var(--sub); margin-top:2px; }
+
+    /* 우측 설정 패널 */
+    #configPanel {
+      position:fixed; right:20px; top:20px; z-index:30;
+      background:var(--panel-bg); width:320px; padding:20px; border-radius:12px;
+      border:1px solid var(--panel-bd); box-shadow: var(--shadow);
+      max-height: calc(100vh - 40px); overflow-y:auto;
+    }
+
+    .section { margin-bottom:24px; }
+    .section-title { 
+      font-size:14px; font-weight:700; color:#0b1726; 
+      margin-bottom:12px; padding-bottom:8px; 
+      border-bottom:1px solid rgba(0,0,0,.08);
+    }
+
+    .input-group { margin-bottom:16px; }
+    .input-group label { 
+      display:block; font-size:12px; color:var(--sub); 
+      margin-bottom:6px; font-weight:500;
+    }
+    .input-wrapper {
+      display:flex; align-items:center; gap:8px;
+    }
+    .input-wrapper input[type="range"] { flex:1; }
+    .input-wrapper input[type="number"] { 
+      width:80px; padding:6px 8px; border:1px solid var(--panel-bd);
+      border-radius:6px; font-size:13px; text-align:right;
+    }
+    .unit { font-size:12px; color:var(--sub); }
+
+    /* 색상 선택 */
+    .color-grid { 
+      display:grid; grid-template-columns:repeat(5, 1fr); gap:8px;
+    }
+    .color-item {
+      aspect-ratio:1; border-radius:8px; cursor:pointer;
+      border:2px solid transparent; transition:all .2s;
+      position:relative; overflow:hidden;
+    }
+    .color-item.selected { 
+      border-color:var(--accent); 
+      box-shadow:0 0 0 2px rgba(43,108,176,.2);
+    }
+    .color-item .color-preview {
+      width:100%; height:100%; border-radius:6px;
+    }
+    .color-item .color-name {
+      position:absolute; bottom:0; left:0; right:0;
+      background:rgba(0,0,0,.7); color:#fff;
+      font-size:9px; padding:2px; text-align:center;
+    }
+
+    /* 가격 표시 */
+    #priceDisplay {
+      position:fixed; bottom:20px; right:20px; z-index:35;
+      background:#0b1726; color:#fff; padding:16px 24px;
+      border-radius:12px; box-shadow: var(--shadow);
+      min-width:280px;
+    }
+    #priceDisplay .price-label {
+      font-size:12px; opacity:.8; margin-bottom:4px;
+    }
+    #priceDisplay .price-value {
+      font-size:28px; font-weight:700;
+    }
+    #priceDisplay .price-detail {
+      font-size:11px; opacity:.6; margin-top:4px;
+    }
+
+    /* 버튼 */
+    .btn {
+      padding:10px 20px; border-radius:8px; border:none;
+      font-size:13px; font-weight:600; cursor:pointer;
+      transition:all .2s;
+    }
+    .btn-primary {
+      background:var(--accent); color:#fff;
+    }
+    .btn-primary:hover {
+      background:#2563a0;
+    }
+    .btn-secondary {
+      background:#eef2f7; color:#0b1726; border:1px solid var(--panel-bd);
+    }
+
+    .action-buttons {
+      display:flex; gap:8px; margin-top:20px;
+    }
+    .action-buttons .btn { flex:1; }
+
+    /* 반응형 */
+    @media (max-width: 768px) {
+      #configPanel { 
+        width:calc(100vw - 40px); 
+        max-width:400px;
+      }
+      #header {
+        left:50%; transform:translateX(-50%);
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  
+  <div id="header">
+    <h1>Topping</h1>
+    <p>옷장 맞춤 선반 구성 시스템</p>
+  </div>
+
+  <div id="configPanel">
+    <!-- 옷장 규격 설정 -->
+    <div class="section">
+      <div class="section-title">옷장 규격 설정</div>
+      
+      <div class="input-group">
+        <label>옷장 내부 가로 (선반 실제 길이)</label>
+        <div class="input-wrapper">
+          <input type="range" id="innerWidth" min="400" max="2000" value="800" step="10">
+          <input type="number" id="innerWidthNum" min="400" max="2000" value="800" step="10">
+          <span class="unit">mm</span>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>옷장 외부 가로</label>
+        <div class="input-wrapper">
+          <input type="range" id="outerWidth" min="500" max="2400" value="900" step="10">
+          <input type="number" id="outerWidthNum" min="500" max="2400" value="900" step="10">
+          <span class="unit">mm</span>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>선반 깊이</label>
+        <div class="input-wrapper">
+          <input type="range" id="shelfDepth" min="200" max="600" value="400" step="10">
+          <input type="number" id="shelfDepthNum" min="200" max="600" value="400" step="10">
+          <span class="unit">mm</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 선반 설정 -->
+    <div class="section">
+      <div class="section-title">선반 구성</div>
+      
+      <div class="input-group">
+        <label>추가할 선반 수</label>
+        <div class="input-wrapper">
+          <input type="range" id="shelfCount" min="0" max="10" value="0" step="1">
+          <input type="number" id="shelfCountNum" min="0" max="10" value="0" step="1">
+          <span class="unit">개</span>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>선반 두께</label>
+        <div class="input-wrapper">
+          <select id="shelfThickness" style="flex:1; padding:6px 8px; border:1px solid var(--panel-bd); border-radius:6px; font-size:13px;">
+            <option value="18">18mm - 표준</option>
+            <option value="24">24mm - 강화</option>
+            <option value="30">30mm - 고중량</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- 색상 선택 -->
+    <div class="section">
+      <div class="section-title">선반 색상</div>
+      
+      <div class="input-group">
+        <label>패널 색상</label>
+        <div class="color-grid" id="panelColors">
+          <div class="color-item selected" data-color="#FFFFFF" data-name="화이트">
+            <div class="color-preview" style="background:#FFFFFF"></div>
+            <div class="color-name">화이트</div>
+          </div>
+          <div class="color-item" data-color="#9B9B9B" data-name="그레이">
+            <div class="color-preview" style="background:#9B9B9B"></div>
+            <div class="color-name">그레이</div>
+          </div>
+          <div class="color-item" data-color="#E8D5B8" data-name="베이지">
+            <div class="color-preview" style="background:#E8D5B8"></div>
+            <div class="color-name">베이지</div>
+          </div>
+          <div class="color-item" data-color="#2C2C2C" data-name="블랙">
+            <div class="color-preview" style="background:#2C2C2C"></div>
+            <div class="color-name">블랙</div>
+          </div>
+          <div class="color-item" data-color="#B8916D" data-name="우드">
+            <div class="color-preview" style="background:#B8916D"></div>
+            <div class="color-name">우드</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>엣지 색상</label>
+        <div class="color-grid" id="edgeColors">
+          <div class="color-item selected" data-color="#FFFFFF" data-name="화이트">
+            <div class="color-preview" style="background:#FFFFFF"></div>
+            <div class="color-name">화이트</div>
+          </div>
+          <div class="color-item" data-color="#9B9B9B" data-name="그레이">
+            <div class="color-preview" style="background:#9B9B9B"></div>
+            <div class="color-name">그레이</div>
+          </div>
+          <div class="color-item" data-color="#E8D5B8" data-name="베이지">
+            <div class="color-preview" style="background:#E8D5B8"></div>
+            <div class="color-name">베이지</div>
+          </div>
+          <div class="color-item" data-color="#2C2C2C" data-name="블랙">
+            <div class="color-preview" style="background:#2C2C2C"></div>
+            <div class="color-name">블랙</div>
+          </div>
+          <div class="color-item" data-color="#B8916D" data-name="우드">
+            <div class="color-preview" style="background:#B8916D"></div>
+            <div class="color-name">우드</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 액션 버튼 -->
+    <div class="action-buttons">
+      <button class="btn btn-secondary" onclick="resetConfiguration()">초기화</button>
+      <button class="btn btn-primary" onclick="downloadPDF()">견적서 다운로드</button>
+    </div>
+  </div>
+
+  <!-- 가격 표시 -->
+  <div id="priceDisplay">
+    <div class="price-label">예상 견적</div>
+    <div class="price-value" id="totalPrice">₩0</div>
+    <div class="price-detail" id="priceDetail">선반을 추가해주세요</div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script type="module">
+    import * as THREE from 'https://cdn.skypack.dev/three@0.136.0';
+    import { OrbitControls } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/controls/OrbitControls.js';
+
+    // Socket.IO 연결
+    const socket = io();
+    let isUpdating = false;
+
+    // Three.js 초기화
+    const canvas = document.getElementById('canvas');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf5f5f5);
+
+    // 카메라 설정
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(2, 1.5, 3);
+
+    // 컨트롤 설정
+    const controls = new OrbitControls(camera, canvas);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.target.set(0, 0.8, 0);
+
+    // 조명 설정
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.4);
+    directionalLight.position.set(5, 10, 5);
+    directionalLight.castShadow = true;
+    directionalLight.shadow.camera.near = 0.1;
+    directionalLight.shadow.camera.far = 50;
+    directionalLight.shadow.camera.left = -10;
+    directionalLight.shadow.camera.right = 10;
+    directionalLight.shadow.camera.top = 10;
+    directionalLight.shadow.camera.bottom = -10;
+    scene.add(directionalLight);
+
+    // 바닥
+    const floorGeometry = new THREE.PlaneGeometry(10, 10);
+    const floorMaterial = new THREE.MeshStandardMaterial({ color: 0xe0e0e0 });
+    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = 0;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    // 옷장과 선반 그룹
+    const wardrobeGroup = new THREE.Group();
+    scene.add(wardrobeGroup);
+
+    let wardrobeOuter = null;
+    let wardrobeInner = null;
+    let shelves = [];
+
+    // 설정 값
+    const config = {
+      innerWidth: 0.8,  // m 단위
+      outerWidth: 0.9,
+      shelfDepth: 0.4,
+      wardrobeHeight: 2.0,  // 고정 높이
+      shelfCount: 0,
+      shelfThickness: 0.018,
+      panelColor: '#FFFFFF',
+      edgeColor: '#FFFFFF'
+    };
+
+    // 가격 계산 (원/㎡ 단위로 계산)
+    const pricing = {
+      panel: {
+        18: 45000,  // 18mm 파티클보드: 45,000원/㎡
+        24: 52000,  // 24mm 파티클보드: 52,000원/㎡
+        30: 60000   // 30mm 파티클보드: 60,000원/㎡
+      },
+      edge: 3000  // 엣지 밴딩: 3,000원/m
+    };
+
+    // 옷장 생성/업데이트 함수
+    function updateWardrobe() {
+      // 기존 옷장 제거
+      if (wardrobeOuter) {
+        wardrobeGroup.remove(wardrobeOuter);
+        wardrobeOuter.geometry.dispose();
+        wardrobeOuter.material.dispose();
+      }
+      if (wardrobeInner) {
+        wardrobeGroup.remove(wardrobeInner);
+        wardrobeInner.geometry.dispose();
+        wardrobeInner.material.dispose();
+      }
+
+      // 옷장 외부 (반투명)
+      const outerGeometry = new THREE.BoxGeometry(
+        config.outerWidth,
+        config.wardrobeHeight,
+        config.shelfDepth
+      );
+      const outerMaterial = new THREE.MeshPhysicalMaterial({
+        color: 0xcccccc,
+        transparent: true,
+        opacity: 0.15,
+        roughness: 0.8,
+        metalness: 0
+      });
+      wardrobeOuter = new THREE.Mesh(outerGeometry, outerMaterial);
+      wardrobeOuter.position.y = config.wardrobeHeight / 2;
+      wardrobeGroup.add(wardrobeOuter);
+
+      // 옷장 내부 와이어프레임
+      const innerGeometry = new THREE.BoxGeometry(
+        config.innerWidth,
+        config.wardrobeHeight - 0.1,
+        config.shelfDepth - 0.05
+      );
+      const edges = new THREE.EdgesGeometry(innerGeometry);
+      const lineMaterial = new THREE.LineBasicMaterial({ color: 0x666666, linewidth: 1 });
+      wardrobeInner = new THREE.LineSegments(edges, lineMaterial);
+      wardrobeInner.position.y = config.wardrobeHeight / 2;
+      wardrobeGroup.add(wardrobeInner);
+      innerGeometry.dispose();
+    }
+
+    // 선반 업데이트 함수
+    function updateShelves() {
+      // 기존 선반 제거
+      shelves.forEach(shelf => {
+        wardrobeGroup.remove(shelf);
+        shelf.geometry.dispose();
+        shelf.material.dispose();
+      });
+      shelves = [];
+
+      if (config.shelfCount === 0) {
+        updatePrice();
+        return;
+      }
+
+      // 선반 간격 계산
+      const availableHeight = config.wardrobeHeight - 0.2;  // 상하 여백
+      const spacing = availableHeight / (config.shelfCount + 1);
+
+      // 선반 생성
+      for (let i = 0; i < config.shelfCount; i++) {
+        const shelfGeometry = new THREE.BoxGeometry(
+          config.innerWidth - 0.02,  // 약간의 여백
+          config.shelfThickness,
+          config.shelfDepth - 0.06
+        );
+        
+        const shelfMaterial = new THREE.MeshStandardMaterial({
+          color: new THREE.Color(config.panelColor),
+          roughness: 0.7,
+          metalness: 0
+        });
+
+        const shelf = new THREE.Mesh(shelfGeometry, shelfMaterial);
+        shelf.position.y = 0.1 + spacing * (i + 1);
+        shelf.castShadow = true;
+        shelf.receiveShadow = true;
+        
+        wardrobeGroup.add(shelf);
+        shelves.push(shelf);
+      }
+
+      updatePrice();
+    }
+
+    // 가격 계산 및 표시
+    function updatePrice() {
+      if (config.shelfCount === 0) {
+        document.getElementById('totalPrice').textContent = '₩0';
+        document.getElementById('priceDetail').textContent = '선반을 추가해주세요';
+        return;
+      }
+
+      const thickness = config.shelfThickness * 1000;  // mm로 변환
+      const panelPricePerSqm = pricing.panel[thickness];
+      
+      // 선반 1개당 면적 (㎡)
+      const shelfArea = config.innerWidth * config.shelfDepth;
+      
+      // 선반 1개당 둘레 (m)
+      const shelfPerimeter = 2 * (config.innerWidth + config.shelfDepth);
+      
+      // 총 가격 계산
+      const panelCost = shelfArea * panelPricePerSqm * config.shelfCount;
+      const edgeCost = shelfPerimeter * pricing.edge * config.shelfCount;
+      const totalCost = Math.round(panelCost + edgeCost);
+
+      // 표시
+      document.getElementById('totalPrice').textContent = `₩${totalCost.toLocaleString()}`;
+      document.getElementById('priceDetail').textContent = 
+        `선반 ${config.shelfCount}개 | ${(config.innerWidth * 1000).toFixed(0)}mm × ${(config.shelfDepth * 1000).toFixed(0)}mm × ${thickness}mm`;
+    }
+
+    // 입력 이벤트 연결
+    function setupInputHandlers() {
+      // 슬라이더와 숫자 입력 동기화
+      const syncInputs = (sliderId, numberId, configKey, scale = 0.001) => {
+        const slider = document.getElementById(sliderId);
+        const number = document.getElementById(numberId);
+        
+        slider.addEventListener('input', (e) => {
+          number.value = e.target.value;
+          config[configKey] = parseFloat(e.target.value) * scale;
+          if (configKey === 'innerWidth' || configKey === 'outerWidth' || configKey === 'shelfDepth') {
+            updateWardrobe();
+          }
+          updateShelves();
+          broadcastState();
+        });
+        
+        number.addEventListener('input', (e) => {
+          slider.value = e.target.value;
+          config[configKey] = parseFloat(e.target.value) * scale;
+          if (configKey === 'innerWidth' || configKey === 'outerWidth' || configKey === 'shelfDepth') {
+            updateWardrobe();
+          }
+          updateShelves();
+          broadcastState();
+        });
+      };
+
+      syncInputs('innerWidth', 'innerWidthNum', 'innerWidth');
+      syncInputs('outerWidth', 'outerWidthNum', 'outerWidth');
+      syncInputs('shelfDepth', 'shelfDepthNum', 'shelfDepth');
+      syncInputs('shelfCount', 'shelfCountNum', 'shelfCount', 1);
+
+      // 선반 두께
+      document.getElementById('shelfThickness').addEventListener('change', (e) => {
+        config.shelfThickness = parseFloat(e.target.value) / 1000;
+        updateShelves();
+        broadcastState();
+      });
+
+      // 색상 선택
+      document.querySelectorAll('#panelColors .color-item').forEach(item => {
+        item.addEventListener('click', () => {
+          document.querySelectorAll('#panelColors .color-item').forEach(i => i.classList.remove('selected'));
+          item.classList.add('selected');
+          config.panelColor = item.dataset.color;
+          updateShelves();
+          broadcastState();
+        });
+      });
+
+      document.querySelectorAll('#edgeColors .color-item').forEach(item => {
+        item.addEventListener('click', () => {
+          document.querySelectorAll('#edgeColors .color-item').forEach(i => i.classList.remove('selected'));
+          item.classList.add('selected');
+          config.edgeColor = item.dataset.color;
+          updateShelves();
+          broadcastState();
+        });
+      });
+    }
+
+    // 초기화 함수
+    window.resetConfiguration = function() {
+      document.getElementById('innerWidth').value = 800;
+      document.getElementById('innerWidthNum').value = 800;
+      document.getElementById('outerWidth').value = 900;
+      document.getElementById('outerWidthNum').value = 900;
+      document.getElementById('shelfDepth').value = 400;
+      document.getElementById('shelfDepthNum').value = 400;
+      document.getElementById('shelfCount').value = 0;
+      document.getElementById('shelfCountNum').value = 0;
+      document.getElementById('shelfThickness').value = 18;
+      
+      config.innerWidth = 0.8;
+      config.outerWidth = 0.9;
+      config.shelfDepth = 0.4;
+      config.shelfCount = 0;
+      config.shelfThickness = 0.018;
+      
+      updateWardrobe();
+      updateShelves();
+      broadcastState();
+    };
+
+    // PDF 다운로드 (임시)
+    window.downloadPDF = function() {
+      alert('견적서 다운로드 기능은 준비 중입니다.');
+    };
+
+    // Socket.IO 이벤트
+    function broadcastState() {
+      if (isUpdating) return;
+      
+      const state = {
+        config,
+        camera: {
+          position: camera.position.toArray(),
+          target: controls.target.toArray()
+        }
+      };
+      
+      socket.emit('state-change', state);
+    }
+
+    socket.on('state-update', (state) => {
+      isUpdating = true;
+      
+      // 설정 업데이트
+      Object.assign(config, state.config);
+      
+      // UI 업데이트
+      document.getElementById('innerWidth').value = config.innerWidth * 1000;
+      document.getElementById('innerWidthNum').value = config.innerWidth * 1000;
+      document.getElementById('outerWidth').value = config.outerWidth * 1000;
+      document.getElementById('outerWidthNum').value = config.outerWidth * 1000;
+      document.getElementById('shelfDepth').value = config.shelfDepth * 1000;
+      document.getElementById('shelfDepthNum').value = config.shelfDepth * 1000;
+      document.getElementById('shelfCount').value = config.shelfCount;
+      document.getElementById('shelfCountNum').value = config.shelfCount;
+      document.getElementById('shelfThickness').value = config.shelfThickness * 1000;
+      
+      // 3D 업데이트
+      updateWardrobe();
+      updateShelves();
+      
+      // 카메라 업데이트
+      if (state.camera) {
+        camera.position.fromArray(state.camera.position);
+        controls.target.fromArray(state.camera.target);
+      }
+      
+      setTimeout(() => { isUpdating = false; }, 100);
+    });
+
+    // 애니메이션 루프
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    // 리사이즈 처리
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // 카메라 변경 시 상태 전송
+    controls.addEventListener('change', () => {
+      if (!isUpdating) {
+        broadcastState();
+      }
+    });
+
+    // 초기화
+    setupInputHandlers();
+    updateWardrobe();
+    animate();
+
+    // 초기 상태 요청
+    socket.emit('request-state');
+  </script>
+</body>
+</html>
