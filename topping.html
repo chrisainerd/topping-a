@@ -186,14 +186,86 @@
       </div>
 
       <div class="input-group">
-        <label>다보 타입</label>
-        <div class="input-wrapper">
-          <select id="bracketType" style="flex:1; padding:6px 8px; border:1px solid var(--panel-bd); border-radius:6px; font-size:13px;">
-            <option value="pin">피스 다보 (원형 핀)</option>
-            <option value="l-shape">ㄱ자 다보 (L형 브래킷)</option>
-            <option value="triangle">삼각 다보 (삼각형 지지대)</option>
-            <option value="hidden">매입형 다보 (숨김형)</option>
-          </select>
+        <label>다보 선택</label>
+        <div class="bracket-selection" id="bracketSelection" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px;">
+          <div class="bracket-item" data-bracket="pin" style="cursor: pointer; border: 2px solid transparent; border-radius: 8px; padding: 8px; text-align: center; background: white; flex: 1; min-width: 80px;">
+            <svg width="60" height="60" viewBox="0 0 60 60" style="display: block; margin: 0 auto;">
+              <!-- 피스 다보 - 측면뷰 (원통형 핀) -->
+              <defs>
+                <linearGradient id="pinGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" style="stop-color:#aaa;stop-opacity:1" />
+                  <stop offset="100%" style="stop-color:#666;stop-opacity:1" />
+                </linearGradient>
+              </defs>
+              <!-- 패널 -->
+              <rect x="5" y="20" width="8" height="20" fill="#e0e0e0" stroke="#999" stroke-width="0.5"/>
+              <!-- 핀 몸체 (나사산 부분) -->
+              <rect x="10" y="28" width="10" height="4" fill="url(#pinGrad)"/>
+              <!-- 핀 머리 (굵은 부분) -->
+              <ellipse cx="25" cy="30" rx="8" ry="5" fill="#888"/>
+              <rect x="20" y="27.5" width="10" height="5" fill="#888"/>
+              <!-- 선반 -->
+              <rect x="30" y="25" width="25" height="3" fill="#f5f5f5" stroke="#ccc" stroke-width="0.5"/>
+            </svg>
+            <div style="font-size: 11px; margin-top: 4px; color: #666;">피스 다보</div>
+          </div>
+          <div class="bracket-item" data-bracket="l-shape" style="cursor: pointer; border: 2px solid transparent; border-radius: 8px; padding: 8px; text-align: center; background: white; flex: 1; min-width: 80px;">
+            <svg width="60" height="60" viewBox="0 0 60 60" style="display: block; margin: 0 auto;">
+              <!-- ㄱ자 다보 - 정면뷰 (위에서 선반을 받치는 ㄱ자 형태) -->
+              <defs>
+                <linearGradient id="lGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#999;stop-opacity:1" />
+                  <stop offset="100%" style="stop-color:#666;stop-opacity:1" />
+                </linearGradient>
+              </defs>
+              <!-- 패널 -->
+              <rect x="45" y="20" width="8" height="20" fill="#e0e0e0" stroke="#999" stroke-width="0.5"/>
+              <!-- 선반 -->
+              <rect x="10" y="22" width="35" height="3" fill="#f5f5f5" stroke="#ccc" stroke-width="0.5"/>
+              <!-- ㄱ자 브래킷 (선반 위에서 받침) -->
+              <path d="M 45 28 L 45 25 L 23 25 L 23 28 L 42 28 L 42 38 L 45 38 Z" fill="url(#lGrad)"/>
+              <!-- 나사 구멍 -->
+              <circle cx="43.5" cy="33" r="1" fill="#555"/>
+              <circle cx="33" cy="26.5" r="1" fill="#555"/>
+            </svg>
+            <div style="font-size: 11px; margin-top: 4px; color: #666;">ㄱ자 다보</div>
+          </div>
+          <div class="bracket-item" data-bracket="triangle" style="cursor: pointer; border: 2px solid transparent; border-radius: 8px; padding: 8px; text-align: center; background: white; flex: 1; min-width: 80px;">
+            <svg width="60" height="60" viewBox="0 0 60 60" style="display: block; margin: 0 auto;">
+              <!-- 삼각 다보 - 정면뷰 (아래로 향한 삼각형) -->
+              <defs>
+                <linearGradient id="triGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#999;stop-opacity:1" />
+                  <stop offset="100%" style="stop-color:#666;stop-opacity:1" />
+                </linearGradient>
+              </defs>
+              <!-- 패널 -->
+              <rect x="5" y="20" width="8" height="20" fill="#e0e0e0" stroke="#999" stroke-width="0.5"/>
+              <!-- 삼각형 브래킷 (아래로 향함) -->
+              <path d="M 13 25 L 13 38 L 35 25 Z" fill="url(#triGrad)" stroke="#555" stroke-width="0.5"/>
+              <!-- 나사 구멍 -->
+              <circle cx="15" cy="30" r="1" fill="#555"/>
+              <!-- 선반 -->
+              <rect x="13" y="22" width="35" height="3" fill="#f5f5f5" stroke="#ccc" stroke-width="0.5"/>
+            </svg>
+            <div style="font-size: 11px; margin-top: 4px; color: #666;">삼각 다보</div>
+          </div>
+          <div class="bracket-item" data-bracket="hidden" style="cursor: pointer; border: 2px solid transparent; border-radius: 8px; padding: 8px; text-align: center; background: white; flex: 1; min-width: 80px;">
+            <svg width="60" height="60" viewBox="0 0 60 60" style="display: block; margin: 0 auto;">
+              <!-- 매입형 다보 - 측면뷰 -->
+              <!-- 패널 -->
+              <rect x="5" y="20" width="8" height="20" fill="#e0e0e0" stroke="#999" stroke-width="0.5"/>
+              <!-- 외부 슬리브 (플라스틱) -->
+              <ellipse cx="13" cy="30" rx="5" ry="5" fill="#f0f0f0" stroke="#888" stroke-width="0.5"/>
+              <rect x="10" y="27" width="8" height="6" fill="#f0f0f0"/>
+              <!-- 내부 핀 -->
+              <rect x="15" y="28.5" width="12" height="3" fill="#888"/>
+              <circle cx="27" cy="30" r="2.5" fill="#888"/>
+              <!-- 선반 -->
+              <rect x="27" y="25" width="28" height="3" fill="#f5f5f5" stroke="#ccc" stroke-width="0.5"/>
+            </svg>
+            <div style="font-size: 11px; margin-top: 4px; color: #666;">매입형 다보</div>
+          </div>
         </div>
       </div>
     </div>
@@ -323,6 +395,51 @@
     floor.receiveShadow = true;
     scene.add(floor);
 
+    // 텍스트 스프라이트 생성 함수 (먼저 정의)
+    function createTextSprite(text, size = 0.1) {
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      canvas.width = 256;
+      canvas.height = 64;
+      
+      // 둥근 모서리 배경 그리기
+      const radius = 12; // 둥근 모서리 반경
+      context.beginPath();
+      context.moveTo(radius, 0);
+      context.lineTo(canvas.width - radius, 0);
+      context.quadraticCurveTo(canvas.width, 0, canvas.width, radius);
+      context.lineTo(canvas.width, canvas.height - radius);
+      context.quadraticCurveTo(canvas.width, canvas.height, canvas.width - radius, canvas.height);
+      context.lineTo(radius, canvas.height);
+      context.quadraticCurveTo(0, canvas.height, 0, canvas.height - radius);
+      context.lineTo(0, radius);
+      context.quadraticCurveTo(0, 0, radius, 0);
+      context.closePath();
+      
+      // 배경 채우기
+      context.fillStyle = 'rgba(255, 255, 255, 0.98)';
+      context.fill();
+      
+      // 테두리
+      context.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+      context.lineWidth = 1;
+      context.stroke();
+      
+      // 텍스트
+      context.fillStyle = '#333333';
+      context.font = 'Bold 22px Arial';
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.fillText(text, 128, 32);
+      
+      const texture = new THREE.CanvasTexture(canvas);
+      const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+      const sprite = new THREE.Sprite(spriteMaterial);
+      sprite.scale.set(size * 3, size * 0.75, 1);
+      
+      return sprite;
+    }
+
     // 옷장과 선반 그룹
     const wardrobeGroup = new THREE.Group();
     scene.add(wardrobeGroup);
@@ -330,6 +447,8 @@
     let wardrobeOuter = null;
     let wardrobeInner = null;
     let shelves = [];
+    const dimensionGroup = new THREE.Group();
+    wardrobeGroup.add(dimensionGroup);
 
     // 설정 값
     const config = {
@@ -357,9 +476,15 @@
 
     // 옷장 생성/업데이트 함수
     function updateWardrobe() {
-      // 기존 옷장 제거
-      wardrobeGroup.clear();
+      // 기존 옷장 제거 (dimensionGroup 제외)
+      const toRemove = [];
       wardrobeGroup.children.forEach(child => {
+        if (child !== dimensionGroup) {
+          toRemove.push(child);
+        }
+      });
+      toRemove.forEach(child => {
+        wardrobeGroup.remove(child);
         if (child.geometry) child.geometry.dispose();
         if (child.material) child.material.dispose();
       });
@@ -601,9 +726,9 @@
       for (let i = 0; i < config.shelfCount; i++) {
         const shelfGroup = new THREE.Group();
         
-        // 메인 선반 (패널)
+        // 메인 선반 (패널) - 측면 패널에 딱 붙도록
         const shelfGeometry = new THREE.BoxGeometry(
-          config.innerWidth - 0.02,  // 약간의 여백
+          config.innerWidth,  // 여백 제거 - 정확한 너비
           config.shelfThickness,
           config.shelfDepth - 0.06
         );
@@ -631,7 +756,7 @@
         
         // 앞면 엣지
         const frontEdge = new THREE.Mesh(
-          new THREE.BoxGeometry(config.innerWidth - 0.02, config.shelfThickness, edgeThickness),
+          new THREE.BoxGeometry(config.innerWidth, config.shelfThickness, edgeThickness),
           edgeMaterial
         );
         frontEdge.position.z = (config.shelfDepth - 0.06) / 2 + edgeThickness / 2;
@@ -639,7 +764,7 @@
         
         // 뒷면 엣지
         const backEdge = new THREE.Mesh(
-          new THREE.BoxGeometry(config.innerWidth - 0.02, config.shelfThickness, edgeThickness),
+          new THREE.BoxGeometry(config.innerWidth, config.shelfThickness, edgeThickness),
           edgeMaterial
         );
         backEdge.position.z = -(config.shelfDepth - 0.06) / 2 - edgeThickness / 2;
@@ -650,7 +775,7 @@
           new THREE.BoxGeometry(edgeThickness, config.shelfThickness, config.shelfDepth - 0.06 + edgeThickness * 2),
           edgeMaterial
         );
-        leftEdge.position.x = -(config.innerWidth - 0.02) / 2 - edgeThickness / 2;
+        leftEdge.position.x = -config.innerWidth / 2 - edgeThickness / 2;
         shelfGroup.add(leftEdge);
         
         // 오른쪽 엣지
@@ -658,7 +783,7 @@
           new THREE.BoxGeometry(edgeThickness, config.shelfThickness, config.shelfDepth - 0.06 + edgeThickness * 2),
           edgeMaterial
         );
-        rightEdge.position.x = (config.innerWidth - 0.02) / 2 + edgeThickness / 2;
+        rightEdge.position.x = config.innerWidth / 2 + edgeThickness / 2;
         shelfGroup.add(rightEdge);
         
         // 다보 추가 (선반 바로 아래, 측면 패널에서 돌출)
@@ -908,6 +1033,51 @@
         wardrobeGroup.add(shelfGroup);
         shelves.push(shelfGroup);
       }
+      
+      // 치수 표시 추가 (첫 번째 선반에만 표시)
+      dimensionGroup.clear();
+      
+      // dimensionGroup이 wardrobeGroup에 있는지 확인하고 없으면 추가
+      if (!wardrobeGroup.children.includes(dimensionGroup)) {
+        wardrobeGroup.add(dimensionGroup);
+      }
+      
+      if (config.shelfCount > 0) {
+        // 첫 번째 선반의 실제 Y 위치 계산
+        const firstShelfY = startY + spacing;
+        console.log('Dimension display:', { 
+          firstShelfY, 
+          startY, 
+          spacing, 
+          innerWidth: config.innerWidth, 
+          shelfDepth: config.shelfDepth,
+          dimensionGroupChildren: dimensionGroup.children.length 
+        });
+        const off = 0.1; // 텍스트 오프셋
+        
+        // 가로 치수 텍스트만 표시 (선반 아래에 표시)
+        const widthMm = Math.round(config.innerWidth * 1000);
+        const widthSprite = createTextSprite(`${widthMm} mm`, 0.08);
+        widthSprite.position.set(0, -config.shelfThickness/2 - off, config.shelfDepth/2);
+        dimensionGroup.add(widthSprite);
+        
+        // 깊이 치수 텍스트만 표시 (선반 오른쪽에 표시)
+        const depthMm = Math.round(config.shelfDepth * 1000);
+        const depthSprite = createTextSprite(`${depthMm} mm`, 0.08);
+        depthSprite.position.set(config.innerWidth/2 + off, 0, 0);
+        dimensionGroup.add(depthSprite);
+        
+        // 치수 그룹을 첫 번째 선반 위치로 이동
+        dimensionGroup.position.y = firstShelfY;
+        
+        // 디버깅: 치수 그룹 정보 출력
+        console.log('Dimension group info:', {
+          position: dimensionGroup.position,
+          childrenCount: dimensionGroup.children.length,
+          visible: dimensionGroup.visible,
+          parent: dimensionGroup.parent === wardrobeGroup
+        });
+      }
 
       updatePrice();
     }
@@ -979,12 +1149,30 @@
         broadcastState();
       });
 
-      // 다보 타입
-      document.getElementById('bracketType').addEventListener('change', (e) => {
-        config.bracketType = e.target.value;
-        updateShelves();
-        broadcastState();
+      // 다보 선택 (이미지 기반)
+      document.querySelectorAll('.bracket-item').forEach(item => {
+        item.addEventListener('click', () => {
+          // 모든 아이템에서 selected 클래스 제거
+          document.querySelectorAll('.bracket-item').forEach(i => {
+            i.style.borderColor = 'transparent';
+            i.style.backgroundColor = 'white';
+          });
+          // 현재 클릭한 아이템에 selected 표시
+          item.style.borderColor = 'var(--blue)';
+          item.style.backgroundColor = '#f0f7ff';
+          // config 업데이트
+          config.bracketType = item.dataset.bracket;
+          updateShelves();
+          broadcastState();
+        });
       });
+      
+      // 초기 선택 상태 설정 (피스 다보)
+      const defaultBracket = document.querySelector('.bracket-item[data-bracket="pin"]');
+      if (defaultBracket) {
+        defaultBracket.style.borderColor = 'var(--blue)';
+        defaultBracket.style.backgroundColor = '#f0f7ff';
+      }
 
       // 색상 선택
       document.querySelectorAll('#panelColors .color-item').forEach(item => {
