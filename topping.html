@@ -184,6 +184,19 @@
           </select>
         </div>
       </div>
+
+      <div class="input-group">
+        <label>다보 타입</label>
+        <div class="input-wrapper">
+          <select id="bracketType" style="flex:1; padding:6px 8px; border:1px solid var(--panel-bd); border-radius:6px; font-size:13px;">
+            <option value="pin">피스 다보 (원형 핀)</option>
+            <option value="l-shape">ㄱ자 다보 (L형 브래킷)</option>
+            <option value="triangle">삼각 다보 (삼각형 지지대)</option>
+            <option value="hidden">매입형 다보 (숨김형)</option>
+            <option value="decorative">장식형 다보 (클래식)</option>
+          </select>
+        </div>
+      </div>
     </div>
 
     <!-- 색상 선택 -->
@@ -329,7 +342,8 @@
       panelColor: '#FFFFFF',
       edgeColor: '#FFFFFF',
       frameThickness: 0.025,  // 옷장 프레임 두께 25mm
-      baseboardHeight: 0.08   // 걸레받이 높이 80mm
+      baseboardHeight: 0.08,   // 걸레받이 높이 80mm
+      bracketType: 'pin'      // 다보 타입
     };
 
     // 가격 계산 (원/㎡ 단위로 계산)
@@ -721,6 +735,123 @@
         rightEdge.position.x = (config.innerWidth - 0.02) / 2 + edgeThickness / 2;
         shelfGroup.add(rightEdge);
         
+        // 다보 추가 (선반 아래 4개 - 각 모서리)
+        const bracketMaterial = new THREE.MeshStandardMaterial({
+          color: 0x888888,
+          metalness: 0.6,
+          roughness: 0.3
+        });
+        
+        const bracketSpacing = 0.05; // 가장자리에서 5cm 떨어진 위치
+        const bracketPositions = [
+          { x: -(config.innerWidth - 0.02) / 2 + bracketSpacing, z: (config.shelfDepth - 0.06) / 2 - bracketSpacing },
+          { x: (config.innerWidth - 0.02) / 2 - bracketSpacing, z: (config.shelfDepth - 0.06) / 2 - bracketSpacing },
+          { x: -(config.innerWidth - 0.02) / 2 + bracketSpacing, z: -(config.shelfDepth - 0.06) / 2 + bracketSpacing },
+          { x: (config.innerWidth - 0.02) / 2 - bracketSpacing, z: -(config.shelfDepth - 0.06) / 2 + bracketSpacing }
+        ];
+        
+        bracketPositions.forEach(pos => {
+          let bracket;
+          
+          switch (config.bracketType) {
+            case 'pin':
+              // 피스 다보 (원형 핀)
+              bracket = new THREE.Group();
+              const pin = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.003, 0.003, 0.015),
+                bracketMaterial
+              );
+              pin.position.y = -config.shelfThickness/2 - 0.0075;
+              bracket.add(pin);
+              const pinHead = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.005, 0.005, 0.002),
+                bracketMaterial
+              );
+              pinHead.position.y = -config.shelfThickness/2 - 0.001;
+              bracket.add(pinHead);
+              break;
+              
+            case 'l-shape':
+              // ㄱ자 다보 (L형 브래킷)
+              bracket = new THREE.Group();
+              const lVertical = new THREE.Mesh(
+                new THREE.BoxGeometry(0.002, 0.025, 0.015),
+                bracketMaterial
+              );
+              lVertical.position.y = -config.shelfThickness/2 - 0.0125;
+              bracket.add(lVertical);
+              const lHorizontal = new THREE.Mesh(
+                new THREE.BoxGeometry(0.015, 0.002, 0.015),
+                bracketMaterial
+              );
+              lHorizontal.position.set(0.0065, -config.shelfThickness/2 - 0.001, 0);
+              bracket.add(lHorizontal);
+              break;
+              
+            case 'triangle':
+              // 삼각 다보 (삼각형 지지대)
+              bracket = new THREE.Group();
+              const triangleShape = new THREE.Shape();
+              triangleShape.moveTo(0, 0);
+              triangleShape.lineTo(0.02, 0);
+              triangleShape.lineTo(0, -0.025);
+              triangleShape.closePath();
+              const triangleGeometry = new THREE.ExtrudeGeometry(triangleShape, {
+                depth: 0.002,
+                bevelEnabled: false
+              });
+              const triangle = new THREE.Mesh(triangleGeometry, bracketMaterial);
+              triangle.rotation.y = Math.PI / 2;
+              triangle.position.set(0.001, -config.shelfThickness/2, 0);
+              bracket.add(triangle);
+              break;
+              
+            case 'hidden':
+              // 매입형 다보 (숨김형 - 작은 원형)
+              bracket = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.004, 0.004, 0.008),
+                bracketMaterial
+              );
+              bracket.position.y = -config.shelfThickness/2 - 0.004;
+              break;
+              
+            case 'decorative':
+              // 장식형 다보 (클래식한 곡선형)
+              bracket = new THREE.Group();
+              const decorBase = new THREE.Mesh(
+                new THREE.BoxGeometry(0.015, 0.003, 0.015),
+                bracketMaterial
+              );
+              decorBase.position.y = -config.shelfThickness/2 - 0.0015;
+              bracket.add(decorBase);
+              // 곡선 지지대
+              const curve = new THREE.CatmullRomCurve3([
+                new THREE.Vector3(0, 0, 0),
+                new THREE.Vector3(0.005, -0.008, 0),
+                new THREE.Vector3(0.01, -0.02, 0)
+              ]);
+              const curveGeometry = new THREE.TubeGeometry(curve, 8, 0.002, 4, false);
+              const curveMesh = new THREE.Mesh(curveGeometry, bracketMaterial);
+              curveMesh.position.y = -config.shelfThickness/2 - 0.003;
+              bracket.add(curveMesh);
+              break;
+              
+            default:
+              // 기본값은 피스 다보
+              bracket = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.003, 0.003, 0.015),
+                bracketMaterial
+              );
+              bracket.position.y = -config.shelfThickness/2 - 0.0075;
+          }
+          
+          if (bracket) {
+            bracket.position.x = pos.x;
+            bracket.position.z = pos.z;
+            shelfGroup.add(bracket);
+          }
+        });
+        
         shelfGroup.position.y = startY + spacing * (i + 1);
         wardrobeGroup.add(shelfGroup);
         shelves.push(shelfGroup);
@@ -796,6 +927,13 @@
         broadcastState();
       });
 
+      // 다보 타입
+      document.getElementById('bracketType').addEventListener('change', (e) => {
+        config.bracketType = e.target.value;
+        updateShelves();
+        broadcastState();
+      });
+
       // 색상 선택
       document.querySelectorAll('#panelColors .color-item').forEach(item => {
         item.addEventListener('click', () => {
@@ -827,11 +965,13 @@
       document.getElementById('shelfCount').value = 0;
       document.getElementById('shelfCountNum').value = 0;
       document.getElementById('shelfThickness').value = 18;
+      document.getElementById('bracketType').value = 'pin';
       
       config.innerWidth = 0.8;
       config.shelfDepth = 0.4;
       config.shelfCount = 0;
       config.shelfThickness = 0.018;
+      config.bracketType = 'pin';
       
       updateWardrobe();
       updateShelves();
@@ -872,6 +1012,7 @@
       document.getElementById('shelfCount').value = config.shelfCount;
       document.getElementById('shelfCountNum').value = config.shelfCount;
       document.getElementById('shelfThickness').value = config.shelfThickness * 1000;
+      if (config.bracketType) document.getElementById('bracketType').value = config.bracketType;
       
       // 3D 업데이트
       updateWardrobe();
