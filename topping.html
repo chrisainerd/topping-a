@@ -397,10 +397,12 @@
     // 선반 업데이트 함수
     function updateShelves() {
       // 기존 선반 제거
-      shelves.forEach(shelf => {
-        wardrobeGroup.remove(shelf);
-        shelf.geometry.dispose();
-        shelf.material.dispose();
+      shelves.forEach(shelfGroup => {
+        wardrobeGroup.remove(shelfGroup);
+        shelfGroup.children.forEach(child => {
+          if (child.geometry) child.geometry.dispose();
+          if (child.material) child.material.dispose();
+        });
       });
       shelves = [];
 
@@ -415,6 +417,9 @@
 
       // 선반 생성
       for (let i = 0; i < config.shelfCount; i++) {
+        const shelfGroup = new THREE.Group();
+        
+        // 메인 선반 (패널)
         const shelfGeometry = new THREE.BoxGeometry(
           config.innerWidth - 0.02,  // 약간의 여백
           config.shelfThickness,
@@ -428,12 +433,53 @@
         });
 
         const shelf = new THREE.Mesh(shelfGeometry, shelfMaterial);
-        shelf.position.y = 0.1 + spacing * (i + 1);
         shelf.castShadow = true;
         shelf.receiveShadow = true;
+        shelfGroup.add(shelf);
         
-        wardrobeGroup.add(shelf);
-        shelves.push(shelf);
+        // 엣지 테두리 추가 (4개 면)
+        const edgeThickness = 0.002; // 2mm 엣지
+        const edgeMaterial = new THREE.MeshStandardMaterial({
+          color: new THREE.Color(config.edgeColor),
+          roughness: 0.7,
+          metalness: 0
+        });
+        
+        // 앞면 엣지
+        const frontEdge = new THREE.Mesh(
+          new THREE.BoxGeometry(config.innerWidth - 0.02, config.shelfThickness, edgeThickness),
+          edgeMaterial
+        );
+        frontEdge.position.z = (config.shelfDepth - 0.06) / 2 + edgeThickness / 2;
+        shelfGroup.add(frontEdge);
+        
+        // 뒷면 엣지
+        const backEdge = new THREE.Mesh(
+          new THREE.BoxGeometry(config.innerWidth - 0.02, config.shelfThickness, edgeThickness),
+          edgeMaterial
+        );
+        backEdge.position.z = -(config.shelfDepth - 0.06) / 2 - edgeThickness / 2;
+        shelfGroup.add(backEdge);
+        
+        // 왼쪽 엣지
+        const leftEdge = new THREE.Mesh(
+          new THREE.BoxGeometry(edgeThickness, config.shelfThickness, config.shelfDepth - 0.06 + edgeThickness * 2),
+          edgeMaterial
+        );
+        leftEdge.position.x = -(config.innerWidth - 0.02) / 2 - edgeThickness / 2;
+        shelfGroup.add(leftEdge);
+        
+        // 오른쪽 엣지
+        const rightEdge = new THREE.Mesh(
+          new THREE.BoxGeometry(edgeThickness, config.shelfThickness, config.shelfDepth - 0.06 + edgeThickness * 2),
+          edgeMaterial
+        );
+        rightEdge.position.x = (config.innerWidth - 0.02) / 2 + edgeThickness / 2;
+        shelfGroup.add(rightEdge);
+        
+        shelfGroup.position.y = 0.1 + spacing * (i + 1);
+        wardrobeGroup.add(shelfGroup);
+        shelves.push(shelfGroup);
       }
 
       updatePrice();
