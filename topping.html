@@ -757,41 +757,60 @@
           
           switch (config.bracketType) {
             case 'pin':
-              // 피스 다보 (원형 핀)
+              // 피스 다보 (원형 핀 - 실제 하드웨어처럼)
               bracket = new THREE.Group();
-              const pinLeft = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.004, 0.004, 0.02),
+              // 핀 몸체 (나사산 부분)
+              const pinBodyLeft = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.003, 0.003, 0.015),
                 bracketMaterial
               );
-              pinLeft.rotation.z = Math.PI / 2;
-              pinLeft.position.x = 0.01;
-              bracket.add(pinLeft);
+              pinBodyLeft.rotation.z = Math.PI / 2;
+              pinBodyLeft.position.x = 0.0075;
+              bracket.add(pinBodyLeft);
+              // 핀 머리 (평평한 지지부)
+              const pinHeadLeft = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.005, 0.005, 0.003),
+                bracketMaterial
+              );
+              pinHeadLeft.rotation.z = Math.PI / 2;
+              pinHeadLeft.position.x = 0.0165;
+              bracket.add(pinHeadLeft);
               break;
               
             case 'l-shape':
-              // ㄱ자 다보 (L형 브래킷)
+              // ㄱ자 다보 (L형 브래킷 - 메탈 브래킷)
               bracket = new THREE.Group();
+              // 수직 부분 (벽면 고정)
               const lVerticalLeft = new THREE.Mesh(
                 new THREE.BoxGeometry(0.002, 0.025, 0.02),
                 bracketMaterial
               );
               lVerticalLeft.position.set(0.001, -0.0125, 0);
               bracket.add(lVerticalLeft);
+              // 수평 부분 (선반 지지)
               const lHorizontalLeft = new THREE.Mesh(
                 new THREE.BoxGeometry(0.025, 0.003, 0.02),
                 bracketMaterial
               );
               lHorizontalLeft.position.set(0.0125, -0.0015, 0);
               bracket.add(lHorizontalLeft);
+              // 보강 리브
+              const ribLeft = new THREE.Mesh(
+                new THREE.BoxGeometry(0.015, 0.002, 0.002),
+                bracketMaterial
+              );
+              ribLeft.rotation.z = -Math.PI / 4;
+              ribLeft.position.set(0.008, -0.008, 0);
+              bracket.add(ribLeft);
               break;
               
             case 'triangle':
-              // 삼각 다보 (삼각형 지지대)
+              // 삼각 다보 (삼각형 지지대 - 방향 수정)
               bracket = new THREE.Group();
               const triangleShapeLeft = new THREE.Shape();
               triangleShapeLeft.moveTo(0, 0);
-              triangleShapeLeft.lineTo(0.025, 0);
-              triangleShapeLeft.lineTo(0.025, -0.02);
+              triangleShapeLeft.lineTo(0, -0.02);  // 아래로
+              triangleShapeLeft.lineTo(0.025, -0.02);  // 오른쪽으로
               triangleShapeLeft.closePath();
               const triangleGeometryLeft = new THREE.ExtrudeGeometry(triangleShapeLeft, {
                 depth: 0.015,
@@ -803,33 +822,60 @@
               break;
               
             case 'hidden':
-              // 매입형 다보 (작은 원형)
-              bracket = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.005, 0.005, 0.01),
+              // 매입형 다보 (플라스틱 삽입형)
+              bracket = new THREE.Group();
+              // 외부 슬리브
+              const sleeveLeft = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.006, 0.006, 0.008),
+                new THREE.MeshStandardMaterial({
+                  color: 0xf0f0f0,
+                  metalness: 0,
+                  roughness: 0.8
+                })
+              );
+              sleeveLeft.rotation.z = Math.PI / 2;
+              sleeveLeft.position.x = 0.004;
+              bracket.add(sleeveLeft);
+              // 내부 핀
+              const innerPinLeft = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.003, 0.003, 0.012),
                 bracketMaterial
               );
-              bracket.rotation.z = Math.PI / 2;
-              bracket.position.x = 0.005;
+              innerPinLeft.rotation.z = Math.PI / 2;
+              innerPinLeft.position.x = 0.006;
+              bracket.add(innerPinLeft);
               break;
               
             case 'decorative':
-              // 장식형 다보 (곡선형)
+              // 장식형 다보 (클래식 스타일)
               bracket = new THREE.Group();
-              const decorBaseLeft = new THREE.Mesh(
-                new THREE.BoxGeometry(0.003, 0.03, 0.025),
+              // 베이스 플레이트
+              const plateLeft = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.008, 0.008, 0.002),
                 bracketMaterial
               );
-              decorBaseLeft.position.set(0.0015, -0.015, 0);
-              bracket.add(decorBaseLeft);
-              const decorTopLeft = new THREE.Mesh(
-                new THREE.BoxGeometry(0.03, 0.003, 0.025),
+              plateLeft.rotation.z = Math.PI / 2;
+              plateLeft.position.x = 0.001;
+              bracket.add(plateLeft);
+              // 장식 기둥
+              const columnLeft = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.004, 0.005, 0.02),
                 bracketMaterial
               );
-              decorTopLeft.position.set(0.015, -0.0015, 0);
-              bracket.add(decorTopLeft);
+              columnLeft.rotation.z = Math.PI / 2;
+              columnLeft.position.x = 0.01;
+              bracket.add(columnLeft);
+              // 장식 머리
+              const decorHeadLeft = new THREE.Mesh(
+                new THREE.SphereGeometry(0.005, 8, 6),
+                bracketMaterial
+              );
+              decorHeadLeft.position.x = 0.02;
+              bracket.add(decorHeadLeft);
               break;
               
             default:
+              // 기본 피스 다보
               bracket = new THREE.Mesh(
                 new THREE.CylinderGeometry(0.004, 0.004, 0.02),
                 bracketMaterial
@@ -857,41 +903,60 @@
           
           switch (config.bracketType) {
             case 'pin':
-              // 피스 다보 (원형 핀)
+              // 피스 다보 (원형 핀 - 실제 하드웨어처럼)
               bracket = new THREE.Group();
-              const pinRight = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.004, 0.004, 0.02),
+              // 핀 몸체 (나사산 부분)
+              const pinBodyRight = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.003, 0.003, 0.015),
                 bracketMaterial
               );
-              pinRight.rotation.z = Math.PI / 2;
-              pinRight.position.x = -0.01;
-              bracket.add(pinRight);
+              pinBodyRight.rotation.z = Math.PI / 2;
+              pinBodyRight.position.x = -0.0075;
+              bracket.add(pinBodyRight);
+              // 핀 머리 (평평한 지지부)
+              const pinHeadRight = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.005, 0.005, 0.003),
+                bracketMaterial
+              );
+              pinHeadRight.rotation.z = Math.PI / 2;
+              pinHeadRight.position.x = -0.0165;
+              bracket.add(pinHeadRight);
               break;
               
             case 'l-shape':
-              // ㄱ자 다보 (L형 브래킷)
+              // ㄱ자 다보 (L형 브래킷 - 메탈 브래킷)
               bracket = new THREE.Group();
+              // 수직 부분 (벽면 고정)
               const lVerticalRight = new THREE.Mesh(
                 new THREE.BoxGeometry(0.002, 0.025, 0.02),
                 bracketMaterial
               );
               lVerticalRight.position.set(-0.001, -0.0125, 0);
               bracket.add(lVerticalRight);
+              // 수평 부분 (선반 지지)
               const lHorizontalRight = new THREE.Mesh(
                 new THREE.BoxGeometry(0.025, 0.003, 0.02),
                 bracketMaterial
               );
               lHorizontalRight.position.set(-0.0125, -0.0015, 0);
               bracket.add(lHorizontalRight);
+              // 보강 리브
+              const ribRight = new THREE.Mesh(
+                new THREE.BoxGeometry(0.015, 0.002, 0.002),
+                bracketMaterial
+              );
+              ribRight.rotation.z = Math.PI / 4;
+              ribRight.position.set(-0.008, -0.008, 0);
+              bracket.add(ribRight);
               break;
               
             case 'triangle':
-              // 삼각 다보 (삼각형 지지대)
+              // 삼각 다보 (삼각형 지지대 - 방향 수정)
               bracket = new THREE.Group();
               const triangleShapeRight = new THREE.Shape();
               triangleShapeRight.moveTo(0, 0);
-              triangleShapeRight.lineTo(-0.025, 0);
-              triangleShapeRight.lineTo(-0.025, -0.02);
+              triangleShapeRight.lineTo(0, -0.02);  // 아래로
+              triangleShapeRight.lineTo(-0.025, -0.02);  // 왼쪽으로
               triangleShapeRight.closePath();
               const triangleGeometryRight = new THREE.ExtrudeGeometry(triangleShapeRight, {
                 depth: 0.015,
@@ -903,33 +968,60 @@
               break;
               
             case 'hidden':
-              // 매입형 다보 (작은 원형)
-              bracket = new THREE.Mesh(
-                new THREE.CylinderGeometry(0.005, 0.005, 0.01),
+              // 매입형 다보 (플라스틱 삽입형)
+              bracket = new THREE.Group();
+              // 외부 슬리브
+              const sleeveRight = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.006, 0.006, 0.008),
+                new THREE.MeshStandardMaterial({
+                  color: 0xf0f0f0,
+                  metalness: 0,
+                  roughness: 0.8
+                })
+              );
+              sleeveRight.rotation.z = Math.PI / 2;
+              sleeveRight.position.x = -0.004;
+              bracket.add(sleeveRight);
+              // 내부 핀
+              const innerPinRight = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.003, 0.003, 0.012),
                 bracketMaterial
               );
-              bracket.rotation.z = Math.PI / 2;
-              bracket.position.x = -0.005;
+              innerPinRight.rotation.z = Math.PI / 2;
+              innerPinRight.position.x = -0.006;
+              bracket.add(innerPinRight);
               break;
               
             case 'decorative':
-              // 장식형 다보 (곡선형)
+              // 장식형 다보 (클래식 스타일)
               bracket = new THREE.Group();
-              const decorBaseRight = new THREE.Mesh(
-                new THREE.BoxGeometry(0.003, 0.03, 0.025),
+              // 베이스 플레이트
+              const plateRight = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.008, 0.008, 0.002),
                 bracketMaterial
               );
-              decorBaseRight.position.set(-0.0015, -0.015, 0);
-              bracket.add(decorBaseRight);
-              const decorTopRight = new THREE.Mesh(
-                new THREE.BoxGeometry(0.03, 0.003, 0.025),
+              plateRight.rotation.z = Math.PI / 2;
+              plateRight.position.x = -0.001;
+              bracket.add(plateRight);
+              // 장식 기둥
+              const columnRight = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.004, 0.005, 0.02),
                 bracketMaterial
               );
-              decorTopRight.position.set(-0.015, -0.0015, 0);
-              bracket.add(decorTopRight);
+              columnRight.rotation.z = Math.PI / 2;
+              columnRight.position.x = -0.01;
+              bracket.add(columnRight);
+              // 장식 머리
+              const decorHeadRight = new THREE.Mesh(
+                new THREE.SphereGeometry(0.005, 8, 6),
+                bracketMaterial
+              );
+              decorHeadRight.position.x = -0.02;
+              bracket.add(decorHeadRight);
               break;
               
             default:
+              // 기본 피스 다보
               bracket = new THREE.Mesh(
                 new THREE.CylinderGeometry(0.004, 0.004, 0.02),
                 bracketMaterial
