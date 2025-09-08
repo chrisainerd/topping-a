@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
+  <title>Sync Cube - r124</title>
+  <style>
+    html, body { margin:0; height:100%; overflow:hidden; background:#111; }
+    canvas { display:block; width:100vw; height:100vh; }
+    #info { position:fixed; left:12px; top:12px; color:#eee; font:14px/1.4 system-ui; z-index:10; }
+  </style>
+
+  <!-- Socket.IO 클라이언트 -->
+  <script src="/socket.io/socket.io.js"></script>
+
+  <!-- three.js r124 (전역 UMD) -->
+  <script src="https://unpkg.com/three@0.124.0/build/three.min.js"></script>
+  <!-- OrbitControls (전역) -->
+  <script src="https://unpkg.com/three@0.124.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+  <div id="info">두 기기에서 열고 움직여 보세요. 회전/줌/스케일이 동기화됩니다.</div>
+  <canvas id="c"></canvas>
+
+  <script>
+    const socket = io();
+
+    // --- 기본 세팅 ---
+    const canvas = document.getElementById('c');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setPixelRatio(window.devicePixelRatio);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x111111);
+
+    const camera = new THREE.PerspectiveCamera(60, 2, 0.1, 100);
+    camera.position.set(2.5, 2.0, 3.5);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+    const dir = new THREE.DirectionalLight(0xffffff, 1.0);
+    dir.position.set(3,5,2); scene.add(dir);
+
+    const cube = new THREE.Mesh(
+      new THREE.BoxGeometry(1,1,1),
+      new THREE.MeshStandardMaterial({ color: 0x4ea3ff })
+    );
+    scene.add(cube);
+
+    function onResize(){
+      const w = window.innerWidth, h = window.innerHeight;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+    window.addEventListener('resize', onResize);
+    onResize();
+
+    // --- 동기화 ---
+    let applyingRemote = false;
+    let lastSend = 0;
+    const SEND_INTERVAL_MS = 33; // ~30fps
+
+    controls.addEventListener("change", () => {
+      if (applyingRemote) return;
+      const now = performance.now();
+      if (now - lastSend < SEND_INTERVAL_MS) return;
+      lastSend = now;
+
+      socket.emit("cubeState", {
+        rot: { x: cube.rotation.x, y: cube.rotation.y, z: cube.rotation.z },
+        scale: { x: cube.scale.x, y: cube.scale.y, z: cube.scale.z }
+      });
+    });
+
+    socket.on("cubeState", (data) => {
+      applyingRemote = true;
+      if (data.rot) cube.rotation.set(data.rot.x, data.rot.y, data.rot.z);
+      if (data.scale) cube.scale.set(data.scale.x, data.scale.y, data.scale.z);
+      applyingRemote = false;
+    });
+
+    (function animate(){
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    })();
+  </script>
+</body>
+</html>
