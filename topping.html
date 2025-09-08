@@ -1,0 +1,1112 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
+  <title>Topping - 옷장 맞춤 선반 구성</title>
+  <style>
+    :root{
+      --panel-bg: rgba(255,255,255,.95);
+      --panel-bd: rgba(0,0,0,.12);
+      --text:#111; --sub:#666; --accent:#2b6cb0; 
+      --shadow:0 8px 28px rgba(0,0,0,.15);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html, body { height:100%; overflow:hidden; background:#f5f5f5; color:var(--text); 
+      font-family: system-ui, -apple-system, sans-serif; }
+    canvas { display:block; width:100vw; height:100vh; }
+
+    /* 상단 타이틀 바 */
+    #header {
+      position:fixed; left:20px; top:20px; z-index:40;
+      background:var(--panel-bg); padding:12px 20px; border-radius:12px;
+      border:1px solid var(--panel-bd); backdrop-filter: blur(6px); 
+      box-shadow: var(--shadow);
+    }
+    #header h1 { font-size:18px; font-weight:700; color:#0b1726; }
+    #header p { font-size:12px; color:var(--sub); margin-top:2px; }
+
+    /* 우측 설정 패널 */
+    #configPanel {
+      position:fixed; right:20px; top:20px; z-index:30;
+      background:var(--panel-bg); width:320px; padding:20px; border-radius:12px;
+      border:1px solid var(--panel-bd); box-shadow: var(--shadow);
+      max-height: calc(100vh - 40px); overflow-y:auto;
+    }
+
+    .section { margin-bottom:24px; }
+    .section-title { 
+      font-size:14px; font-weight:700; color:#0b1726; 
+      margin-bottom:12px; padding-bottom:8px; 
+      border-bottom:1px solid rgba(0,0,0,.08);
+    }
+
+    .input-group { margin-bottom:16px; }
+    .input-group label { 
+      display:block; font-size:12px; color:var(--sub); 
+      margin-bottom:6px; font-weight:500;
+    }
+    .input-wrapper {
+      display:flex; align-items:center; gap:8px;
+    }
+    .input-wrapper input[type="range"] { flex:1; }
+    .input-wrapper input[type="number"] { 
+      width:80px; padding:6px 8px; border:1px solid var(--panel-bd);
+      border-radius:6px; font-size:13px; text-align:right;
+    }
+    .unit { font-size:12px; color:var(--sub); }
+
+    /* 색상 선택 */
+    .color-grid { 
+      display:grid; grid-template-columns:repeat(5, 1fr); gap:8px;
+    }
+    .color-item {
+      aspect-ratio:1; border-radius:8px; cursor:pointer;
+      border:2px solid transparent; transition:all .2s;
+      position:relative; overflow:hidden;
+    }
+    .color-item.selected { 
+      border-color:var(--accent); 
+      box-shadow:0 0 0 2px rgba(43,108,176,.2);
+    }
+    .color-item .color-preview {
+      width:100%; height:100%; border-radius:6px;
+    }
+    .color-item .color-name {
+      position:absolute; bottom:0; left:0; right:0;
+      background:rgba(0,0,0,.7); color:#fff;
+      font-size:9px; padding:2px; text-align:center;
+    }
+
+    /* 가격 표시 */
+    #priceDisplay {
+      position:fixed; bottom:20px; right:20px; z-index:35;
+      background:#0b1726; color:#fff; padding:16px 24px;
+      border-radius:12px; box-shadow: var(--shadow);
+      min-width:280px;
+    }
+    #priceDisplay .price-label {
+      font-size:12px; opacity:.8; margin-bottom:4px;
+    }
+    #priceDisplay .price-value {
+      font-size:28px; font-weight:700;
+    }
+    #priceDisplay .price-detail {
+      font-size:11px; opacity:.6; margin-top:4px;
+    }
+
+    /* 버튼 */
+    .btn {
+      padding:10px 20px; border-radius:8px; border:none;
+      font-size:13px; font-weight:600; cursor:pointer;
+      transition:all .2s;
+    }
+    .btn-primary {
+      background:var(--accent); color:#fff;
+    }
+    .btn-primary:hover {
+      background:#2563a0;
+    }
+    .btn-secondary {
+      background:#eef2f7; color:#0b1726; border:1px solid var(--panel-bd);
+    }
+
+    .action-buttons {
+      display:flex; gap:8px; margin-top:20px;
+    }
+    .action-buttons .btn { flex:1; }
+
+    /* 반응형 */
+    @media (max-width: 768px) {
+      #configPanel { 
+        width:calc(100vw - 40px); 
+        max-width:400px;
+      }
+      #header {
+        left:50%; transform:translateX(-50%);
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  
+  <div id="header">
+    <h1>Topping</h1>
+    <p>옷장 맞춤 선반 구성 시스템</p>
+  </div>
+
+  <div id="configPanel">
+    <!-- 옷장 규격 설정 -->
+    <div class="section">
+      <div class="section-title">옷장 규격 설정</div>
+      
+      <div class="input-group">
+        <label>옷장 내부 가로 (선반 실제 길이)</label>
+        <div class="input-wrapper">
+          <input type="range" id="innerWidth" min="400" max="2000" value="800" step="10">
+          <input type="number" id="innerWidthNum" min="400" max="2000" value="800" step="10">
+          <span class="unit">mm</span>
+        </div>
+      </div>
+
+
+      <div class="input-group">
+        <label>선반 깊이</label>
+        <div class="input-wrapper">
+          <input type="range" id="shelfDepth" min="200" max="600" value="400" step="10">
+          <input type="number" id="shelfDepthNum" min="200" max="600" value="400" step="10">
+          <span class="unit">mm</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 선반 설정 -->
+    <div class="section">
+      <div class="section-title">선반 구성</div>
+      
+      <div class="input-group">
+        <label>추가할 선반 수</label>
+        <div class="input-wrapper">
+          <input type="range" id="shelfCount" min="0" max="10" value="0" step="1">
+          <input type="number" id="shelfCountNum" min="0" max="10" value="0" step="1">
+          <span class="unit">개</span>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>선반 두께</label>
+        <div class="input-wrapper">
+          <select id="shelfThickness" style="flex:1; padding:6px 8px; border:1px solid var(--panel-bd); border-radius:6px; font-size:13px;">
+            <option value="18">18mm - 표준</option>
+            <option value="24">24mm - 강화</option>
+            <option value="30">30mm - 고중량</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>다보 타입</label>
+        <div class="input-wrapper">
+          <select id="bracketType" style="flex:1; padding:6px 8px; border:1px solid var(--panel-bd); border-radius:6px; font-size:13px;">
+            <option value="pin">피스 다보 (원형 핀)</option>
+            <option value="l-shape">ㄱ자 다보 (L형 브래킷)</option>
+            <option value="triangle">삼각 다보 (삼각형 지지대)</option>
+            <option value="hidden">매입형 다보 (숨김형)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- 색상 선택 -->
+    <div class="section">
+      <div class="section-title">선반 색상</div>
+      
+      <div class="input-group">
+        <label>패널 색상</label>
+        <div class="color-grid" id="panelColors">
+          <div class="color-item selected" data-color="#FFFFFF" data-name="화이트">
+            <div class="color-preview" style="background:#FFFFFF"></div>
+            <div class="color-name">화이트</div>
+          </div>
+          <div class="color-item" data-color="#9B9B9B" data-name="그레이">
+            <div class="color-preview" style="background:#9B9B9B"></div>
+            <div class="color-name">그레이</div>
+          </div>
+          <div class="color-item" data-color="#E8D5B8" data-name="베이지">
+            <div class="color-preview" style="background:#E8D5B8"></div>
+            <div class="color-name">베이지</div>
+          </div>
+          <div class="color-item" data-color="#2C2C2C" data-name="블랙">
+            <div class="color-preview" style="background:#2C2C2C"></div>
+            <div class="color-name">블랙</div>
+          </div>
+          <div class="color-item" data-color="#B8916D" data-name="우드">
+            <div class="color-preview" style="background:#B8916D"></div>
+            <div class="color-name">우드</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>엣지 색상</label>
+        <div class="color-grid" id="edgeColors">
+          <div class="color-item selected" data-color="#FFFFFF" data-name="화이트">
+            <div class="color-preview" style="background:#FFFFFF"></div>
+            <div class="color-name">화이트</div>
+          </div>
+          <div class="color-item" data-color="#9B9B9B" data-name="그레이">
+            <div class="color-preview" style="background:#9B9B9B"></div>
+            <div class="color-name">그레이</div>
+          </div>
+          <div class="color-item" data-color="#E8D5B8" data-name="베이지">
+            <div class="color-preview" style="background:#E8D5B8"></div>
+            <div class="color-name">베이지</div>
+          </div>
+          <div class="color-item" data-color="#2C2C2C" data-name="블랙">
+            <div class="color-preview" style="background:#2C2C2C"></div>
+            <div class="color-name">블랙</div>
+          </div>
+          <div class="color-item" data-color="#B8916D" data-name="우드">
+            <div class="color-preview" style="background:#B8916D"></div>
+            <div class="color-name">우드</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 액션 버튼 -->
+    <div class="action-buttons">
+      <button class="btn btn-secondary" onclick="resetConfiguration()">초기화</button>
+      <button class="btn btn-primary" onclick="downloadPDF()">견적서 다운로드</button>
+    </div>
+  </div>
+
+  <!-- 가격 표시 -->
+  <div id="priceDisplay">
+    <div class="price-label">예상 견적</div>
+    <div class="price-value" id="totalPrice">₩0</div>
+    <div class="price-detail" id="priceDetail">선반을 추가해주세요</div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script type="module">
+    import * as THREE from 'https://cdn.skypack.dev/three@0.136.0';
+    import { OrbitControls } from 'https://cdn.skypack.dev/three@0.136.0/examples/jsm/controls/OrbitControls.js';
+
+    // Socket.IO 연결
+    const socket = io();
+    let isUpdating = false;
+
+    // Three.js 초기화
+    const canvas = document.getElementById('canvas');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf5f5f5);
+
+    // 카메라 설정
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(2, 1.5, 3);
+
+    // 컨트롤 설정
+    const controls = new OrbitControls(camera, canvas);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.target.set(0, 0.8, 0);
+
+    // 조명 설정
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.4);
+    directionalLight.position.set(5, 10, 5);
+    directionalLight.castShadow = true;
+    directionalLight.shadow.camera.near = 0.1;
+    directionalLight.shadow.camera.far = 50;
+    directionalLight.shadow.camera.left = -10;
+    directionalLight.shadow.camera.right = 10;
+    directionalLight.shadow.camera.top = 10;
+    directionalLight.shadow.camera.bottom = -10;
+    scene.add(directionalLight);
+
+    // 바닥
+    const floorGeometry = new THREE.PlaneGeometry(10, 10);
+    const floorMaterial = new THREE.MeshStandardMaterial({ color: 0xe0e0e0 });
+    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = 0;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    // 옷장과 선반 그룹
+    const wardrobeGroup = new THREE.Group();
+    scene.add(wardrobeGroup);
+
+    let wardrobeOuter = null;
+    let wardrobeInner = null;
+    let shelves = [];
+
+    // 설정 값
+    const config = {
+      innerWidth: 0.8,  // m 단위
+      shelfDepth: 0.4,
+      wardrobeHeight: 2.0,  // 고정 높이
+      shelfCount: 0,
+      shelfThickness: 0.018,
+      panelColor: '#FFFFFF',
+      edgeColor: '#FFFFFF',
+      frameThickness: 0.025,  // 옷장 프레임 두께 25mm
+      baseboardHeight: 0.08,   // 걸레받이 높이 80mm
+      bracketType: 'pin'      // 다보 타입
+    };
+
+    // 가격 계산 (원/㎡ 단위로 계산)
+    const pricing = {
+      panel: {
+        18: 45000,  // 18mm 파티클보드: 45,000원/㎡
+        24: 52000,  // 24mm 파티클보드: 52,000원/㎡
+        30: 60000   // 30mm 파티클보드: 60,000원/㎡
+      },
+      edge: 3000  // 엣지 밴딩: 3,000원/m
+    };
+
+    // 옷장 생성/업데이트 함수
+    function updateWardrobe() {
+      // 기존 옷장 제거
+      wardrobeGroup.clear();
+      wardrobeGroup.children.forEach(child => {
+        if (child.geometry) child.geometry.dispose();
+        if (child.material) child.material.dispose();
+      });
+
+      const outerWidth = config.innerWidth + config.frameThickness * 2;
+      const frameMaterial = new THREE.MeshPhysicalMaterial({
+        color: 0xf0f0f0,
+        transparent: true,
+        opacity: 0.25,
+        roughness: 0.9,
+        metalness: 0
+      });
+
+      // 프레임 높이 계산 (하단판 위에 좌우판, 그 위에 상단판)
+      const frameHeight = config.wardrobeHeight - config.baseboardHeight;
+      const frameYOffset = config.baseboardHeight;
+      const sideFrameHeight = frameHeight - config.frameThickness * 2;  // 상하판 두께 제외
+      
+      // 하단 프레임 (걸레받이 위, 가장 먼저)
+      const bottomFrame = new THREE.Mesh(
+        new THREE.BoxGeometry(outerWidth, config.frameThickness, config.shelfDepth),
+        frameMaterial
+      );
+      bottomFrame.position.set(0, config.baseboardHeight + config.frameThickness/2, 0);
+      wardrobeGroup.add(bottomFrame);
+      
+      // 하단 프레임 엣지라인
+      const bottomFrameEdges = new THREE.EdgesGeometry(bottomFrame.geometry);
+      const bottomFrameLines = new THREE.LineSegments(bottomFrameEdges, new THREE.LineBasicMaterial({ color: 0x666666 }));
+      bottomFrameLines.position.copy(bottomFrame.position);
+      wardrobeGroup.add(bottomFrameLines);
+      
+      // 좌측 프레임 (하단판 위에 올라감)
+      const leftFrame = new THREE.Mesh(
+        new THREE.BoxGeometry(config.frameThickness, sideFrameHeight, config.shelfDepth),
+        frameMaterial
+      );
+      leftFrame.position.set(
+        -config.innerWidth/2 - config.frameThickness/2, 
+        config.baseboardHeight + config.frameThickness + sideFrameHeight/2, 
+        0
+      );
+      wardrobeGroup.add(leftFrame);
+      
+      // 좌측 프레임 엣지라인
+      const leftFrameEdges = new THREE.EdgesGeometry(leftFrame.geometry);
+      const leftFrameLines = new THREE.LineSegments(leftFrameEdges, new THREE.LineBasicMaterial({ color: 0x666666 }));
+      leftFrameLines.position.copy(leftFrame.position);
+      wardrobeGroup.add(leftFrameLines);
+
+      // 우측 프레임 (하단판 위에 올라감)
+      const rightFrame = new THREE.Mesh(
+        new THREE.BoxGeometry(config.frameThickness, sideFrameHeight, config.shelfDepth),
+        frameMaterial
+      );
+      rightFrame.position.set(
+        config.innerWidth/2 + config.frameThickness/2, 
+        config.baseboardHeight + config.frameThickness + sideFrameHeight/2, 
+        0
+      );
+      wardrobeGroup.add(rightFrame);
+      
+      // 우측 프레임 엣지라인
+      const rightFrameEdges = new THREE.EdgesGeometry(rightFrame.geometry);
+      const rightFrameLines = new THREE.LineSegments(rightFrameEdges, new THREE.LineBasicMaterial({ color: 0x666666 }));
+      rightFrameLines.position.copy(rightFrame.position);
+      wardrobeGroup.add(rightFrameLines);
+
+      // 상단 프레임 (좌우판 위에 얹어짐)
+      const topFrame = new THREE.Mesh(
+        new THREE.BoxGeometry(outerWidth, config.frameThickness, config.shelfDepth),
+        frameMaterial
+      );
+      topFrame.position.set(0, config.wardrobeHeight - config.frameThickness/2, 0);
+      wardrobeGroup.add(topFrame);
+      
+      // 상단 프레임 엣지라인
+      const topFrameEdges = new THREE.EdgesGeometry(topFrame.geometry);
+      const topFrameLines = new THREE.LineSegments(topFrameEdges, new THREE.LineBasicMaterial({ color: 0x666666 }));
+      topFrameLines.position.copy(topFrame.position);
+      wardrobeGroup.add(topFrameLines);
+
+      // 뒷판 (프레임 내부에 맞춤)
+      const backPanelHeight = sideFrameHeight;  // 상하판 사이 높이
+      const backPanelWidth = config.innerWidth;  // 좌우판 사이 너비
+      const backPanel = new THREE.Mesh(
+        new THREE.BoxGeometry(backPanelWidth, backPanelHeight, 0.005),
+        new THREE.MeshPhysicalMaterial({
+          color: 0xe8e8e8,
+          transparent: true,
+          opacity: 0.15,
+          roughness: 0.9
+        })
+      );
+      backPanel.position.set(
+        0, 
+        config.baseboardHeight + config.frameThickness + backPanelHeight/2, 
+        -config.shelfDepth/2 + 0.0025
+      );
+      wardrobeGroup.add(backPanel);
+      
+      // 뒷판 엣지라인
+      const backPanelEdges = new THREE.EdgesGeometry(backPanel.geometry);
+      const backPanelLines = new THREE.LineSegments(backPanelEdges, new THREE.LineBasicMaterial({ color: 0x666666 }));
+      backPanelLines.position.copy(backPanel.position);
+      wardrobeGroup.add(backPanelLines);
+
+      // 걸레받이 구조 (가구와 동일한 색상)
+      const baseboardMaterial = new THREE.MeshPhysicalMaterial({
+        color: 0xf0f0f0,
+        transparent: true,
+        opacity: 0.3,
+        roughness: 0.9,
+        metalness: 0
+      });
+      
+      // 걸레받이 - 좌측
+      const leftBaseboard = new THREE.Mesh(
+        new THREE.BoxGeometry(config.frameThickness, config.baseboardHeight, 0.01),
+        baseboardMaterial
+      );
+      leftBaseboard.position.set(-config.innerWidth/2 - config.frameThickness/2, config.baseboardHeight/2, config.shelfDepth/2 - 0.005);
+      leftBaseboard.castShadow = true;
+      wardrobeGroup.add(leftBaseboard);
+      
+      // 걸레받이 - 우측
+      const rightBaseboard = new THREE.Mesh(
+        new THREE.BoxGeometry(config.frameThickness, config.baseboardHeight, 0.01),
+        baseboardMaterial
+      );
+      rightBaseboard.position.set(config.innerWidth/2 + config.frameThickness/2, config.baseboardHeight/2, config.shelfDepth/2 - 0.005);
+      rightBaseboard.castShadow = true;
+      wardrobeGroup.add(rightBaseboard);
+      
+      // 걸레받이 - 뒤쪽
+      const backBaseboard = new THREE.Mesh(
+        new THREE.BoxGeometry(outerWidth, config.baseboardHeight, 0.01),
+        baseboardMaterial
+      );
+      backBaseboard.position.set(0, config.baseboardHeight/2, -config.shelfDepth/2 + 0.005);
+      backBaseboard.castShadow = true;
+      wardrobeGroup.add(backBaseboard);
+      
+      // 걸레받이 - 앞쪽 (문 아래)
+      const frontBaseboardLeft = new THREE.Mesh(
+        new THREE.BoxGeometry(outerWidth/2 - 0.002, config.baseboardHeight * 0.6, 0.01),
+        baseboardMaterial
+      );
+      frontBaseboardLeft.position.set(-outerWidth/4, config.baseboardHeight * 0.3, config.shelfDepth/2 - 0.005);
+      frontBaseboardLeft.castShadow = true;
+      wardrobeGroup.add(frontBaseboardLeft);
+      
+      const frontBaseboardRight = new THREE.Mesh(
+        new THREE.BoxGeometry(outerWidth/2 - 0.002, config.baseboardHeight * 0.6, 0.01),
+        baseboardMaterial
+      );
+      frontBaseboardRight.position.set(outerWidth/4, config.baseboardHeight * 0.3, config.shelfDepth/2 - 0.005);
+      frontBaseboardRight.castShadow = true;
+      wardrobeGroup.add(frontBaseboardRight);
+
+      // 내부 공간 와이어프레임 (가이드라인) - 프레임 내부 공간
+      const innerGeometry = new THREE.BoxGeometry(
+        config.innerWidth,
+        sideFrameHeight,
+        config.shelfDepth - 0.01
+      );
+      const edges = new THREE.EdgesGeometry(innerGeometry);
+      const lineMaterial = new THREE.LineBasicMaterial({ color: 0x999999, linewidth: 1 });
+      const innerWireframe = new THREE.LineSegments(edges, lineMaterial);
+      innerWireframe.position.y = config.baseboardHeight + config.frameThickness + sideFrameHeight/2;
+      wardrobeGroup.add(innerWireframe);
+      innerGeometry.dispose();
+
+      // 문 추가 (양쪽 여닫이)
+      const doorWidth = outerWidth / 2 - 0.002; // 약간의 틈
+      const doorHeight = sideFrameHeight;
+      const doorThickness = 0.018;
+      
+      const doorMaterial = new THREE.MeshPhysicalMaterial({
+        color: 0xfafafa,
+        transparent: true,
+        opacity: 0.15,
+        roughness: 0.2,
+        metalness: 0,
+        side: THREE.DoubleSide
+      });
+
+      // 왼쪽 문 (160도 열림)
+      const leftDoorGroup = new THREE.Group();
+      const leftDoor = new THREE.Mesh(
+        new THREE.BoxGeometry(doorWidth, doorHeight, doorThickness),
+        doorMaterial
+      );
+      leftDoor.position.x = doorWidth / 2;
+      leftDoorGroup.add(leftDoor);
+      
+      leftDoorGroup.position.set(-outerWidth/2, config.baseboardHeight + config.frameThickness + sideFrameHeight/2, config.shelfDepth/2);
+      leftDoorGroup.rotation.y = -Math.PI * 160 / 180; // 바깥쪽으로 160도 열림
+      wardrobeGroup.add(leftDoorGroup);
+
+      // 오른쪽 문 (160도 열림)
+      const rightDoorGroup = new THREE.Group();
+      const rightDoor = new THREE.Mesh(
+        new THREE.BoxGeometry(doorWidth, doorHeight, doorThickness),
+        doorMaterial
+      );
+      rightDoor.position.x = -doorWidth / 2;
+      rightDoorGroup.add(rightDoor);
+      
+      rightDoorGroup.position.set(outerWidth/2, config.baseboardHeight + config.frameThickness + sideFrameHeight/2, config.shelfDepth/2);
+      rightDoorGroup.rotation.y = Math.PI * 160 / 180; // 바깥쪽으로 160도 열림
+      wardrobeGroup.add(rightDoorGroup);
+    }
+
+    // 선반 업데이트 함수
+    function updateShelves() {
+      // 기존 선반 제거
+      shelves.forEach(shelfGroup => {
+        wardrobeGroup.remove(shelfGroup);
+        shelfGroup.children.forEach(child => {
+          if (child.geometry) child.geometry.dispose();
+          if (child.material) child.material.dispose();
+        });
+      });
+      shelves = [];
+
+      if (config.shelfCount === 0) {
+        updatePrice();
+        return;
+      }
+
+      // 선반 간격 계산 (걸레받이와 프레임 고려)
+      const frameHeight = config.wardrobeHeight - config.baseboardHeight;
+      const availableHeight = frameHeight - config.frameThickness * 2;  // 상하 프레임 제외
+      const spacing = availableHeight / (config.shelfCount + 1);
+      const startY = config.baseboardHeight + config.frameThickness;  // 시작 높이
+
+      // 선반 생성
+      for (let i = 0; i < config.shelfCount; i++) {
+        const shelfGroup = new THREE.Group();
+        
+        // 메인 선반 (패널)
+        const shelfGeometry = new THREE.BoxGeometry(
+          config.innerWidth - 0.02,  // 약간의 여백
+          config.shelfThickness,
+          config.shelfDepth - 0.06
+        );
+        
+        const shelfMaterial = new THREE.MeshStandardMaterial({
+          color: new THREE.Color(config.panelColor),
+          roughness: 0.9,
+          metalness: 0,
+          flatShading: false
+        });
+
+        const shelf = new THREE.Mesh(shelfGeometry, shelfMaterial);
+        shelf.castShadow = false;
+        shelf.receiveShadow = false;
+        shelfGroup.add(shelf);
+        
+        // 엣지 테두리 추가 (4개 면)
+        // 엣지 추가
+        const edgeThickness = 0.002; // 2mm 엣지
+        const edgeMaterial = new THREE.MeshStandardMaterial({
+          color: new THREE.Color(config.edgeColor),
+          roughness: 0.7,
+          metalness: 0
+        });
+        
+        // 앞면 엣지
+        const frontEdge = new THREE.Mesh(
+          new THREE.BoxGeometry(config.innerWidth - 0.02, config.shelfThickness, edgeThickness),
+          edgeMaterial
+        );
+        frontEdge.position.z = (config.shelfDepth - 0.06) / 2 + edgeThickness / 2;
+        shelfGroup.add(frontEdge);
+        
+        // 뒷면 엣지
+        const backEdge = new THREE.Mesh(
+          new THREE.BoxGeometry(config.innerWidth - 0.02, config.shelfThickness, edgeThickness),
+          edgeMaterial
+        );
+        backEdge.position.z = -(config.shelfDepth - 0.06) / 2 - edgeThickness / 2;
+        shelfGroup.add(backEdge);
+        
+        // 왼쪽 엣지
+        const leftEdge = new THREE.Mesh(
+          new THREE.BoxGeometry(edgeThickness, config.shelfThickness, config.shelfDepth - 0.06 + edgeThickness * 2),
+          edgeMaterial
+        );
+        leftEdge.position.x = -(config.innerWidth - 0.02) / 2 - edgeThickness / 2;
+        shelfGroup.add(leftEdge);
+        
+        // 오른쪽 엣지
+        const rightEdge = new THREE.Mesh(
+          new THREE.BoxGeometry(edgeThickness, config.shelfThickness, config.shelfDepth - 0.06 + edgeThickness * 2),
+          edgeMaterial
+        );
+        rightEdge.position.x = (config.innerWidth - 0.02) / 2 + edgeThickness / 2;
+        shelfGroup.add(rightEdge);
+        
+        // 다보 추가 (선반 바로 아래, 측면 패널에서 돌출)
+        const bracketMaterial = new THREE.MeshStandardMaterial({
+          color: 0x888888,
+          metalness: 0.6,
+          roughness: 0.3
+        });
+        
+        // 다보는 선반 바로 아래 위치
+        const bracketDepthSpacing = 0.08; // 앞뒤에서 8cm 떨어진 위치
+        
+        // 좌측 다보 (2개 - 앞, 뒤)
+        const leftBracketPositions = [
+          { z: (config.shelfDepth - 0.06) / 2 - bracketDepthSpacing },  // 앞쪽
+          { z: -(config.shelfDepth - 0.06) / 2 + bracketDepthSpacing }  // 뒤쪽
+        ];
+        
+        leftBracketPositions.forEach(pos => {
+          let bracket;
+          // ㄱ자와 삼각 다보는 측면 패널 안쪽 면에 딱 붙음, 나머지는 패널 안으로 파고들어감
+          const xPos = (config.bracketType === 'l-shape' || config.bracketType === 'triangle') 
+            ? -config.innerWidth/2 
+            : -config.innerWidth/2 + 0.005;  // 핀과 숨김형은 5mm 파고들어감
+          
+          switch (config.bracketType) {
+            case 'pin':
+              // 피스 다보 (원형 핀 - 측면 패널에 매입)
+              bracket = new THREE.Group();
+              // 핀 몸체 (나사산 부분 - 패널에 박힘)
+              const pinBodyLeft = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.003, 0.003, 0.01),
+                bracketMaterial
+              );
+              pinBodyLeft.rotation.z = Math.PI / 2;
+              pinBodyLeft.position.x = -0.005;  // 패널 쪽으로 (왼쪽 패널 방향)
+              bracket.add(pinBodyLeft);
+              // 핀 머리 (길게 돌출된 지지부)
+              const pinHeadLeft = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.005, 0.005, 0.015),
+                bracketMaterial
+              );
+              pinHeadLeft.rotation.z = Math.PI / 2;
+              pinHeadLeft.position.x = 0.0075;  // 안쪽으로 돌출 (선반 방향)
+              bracket.add(pinHeadLeft);
+              break;
+              
+            case 'l-shape':
+              // ㄱ자 다보 (L형 브래킷)
+              bracket = new THREE.Group();
+              const lVerticalLeft = new THREE.Mesh(
+                new THREE.BoxGeometry(0.002, 0.025, 0.02),
+                bracketMaterial
+              );
+              lVerticalLeft.position.set(0.001, -0.0125, 0);
+              bracket.add(lVerticalLeft);
+              const lHorizontalLeft = new THREE.Mesh(
+                new THREE.BoxGeometry(0.025, 0.003, 0.02),
+                bracketMaterial
+              );
+              lHorizontalLeft.position.set(0.0125, -0.0015, 0);
+              bracket.add(lHorizontalLeft);
+              break;
+              
+            case 'triangle':
+              // 삼각 다보 (삼각형 지지대 - 180도 회전)
+              bracket = new THREE.Group();
+              const triangleShapeLeft = new THREE.Shape();
+              triangleShapeLeft.moveTo(0, 0);
+              triangleShapeLeft.lineTo(0.025, 0);  // 오른쪽으로
+              triangleShapeLeft.lineTo(0, -0.02);  // 아래로
+              triangleShapeLeft.closePath();
+              const triangleGeometryLeft = new THREE.ExtrudeGeometry(triangleShapeLeft, {
+                depth: 0.015,
+                bevelEnabled: false
+              });
+              const triangleLeft = new THREE.Mesh(triangleGeometryLeft, bracketMaterial);
+              triangleLeft.position.set(0, 0, -0.0075);
+              bracket.add(triangleLeft);
+              break;
+              
+            case 'hidden':
+              // 매입형 다보 (플라스틱 삽입형)
+              bracket = new THREE.Group();
+              // 외부 슬리브
+              const sleeveLeft = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.006, 0.006, 0.008),
+                new THREE.MeshStandardMaterial({
+                  color: 0xf0f0f0,
+                  metalness: 0,
+                  roughness: 0.8
+                })
+              );
+              sleeveLeft.rotation.z = Math.PI / 2;
+              sleeveLeft.position.x = -0.004;  // 패널 쪽으로 (왼쪽 패널 방향)
+              bracket.add(sleeveLeft);
+              // 내부 핀
+              const innerPinLeft = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.003, 0.003, 0.012),
+                bracketMaterial
+              );
+              innerPinLeft.rotation.z = Math.PI / 2;
+              innerPinLeft.position.x = 0.006;  // 안쪽으로 돌출 (선반 방향)
+              bracket.add(innerPinLeft);
+              break;
+              
+            default:
+              // 기본 피스 다보
+              bracket = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.004, 0.004, 0.02),
+                bracketMaterial
+              );
+              bracket.rotation.z = Math.PI / 2;
+          }
+          
+          if (bracket) {
+            // 선반 바로 아래 위치 (shelfGroup 좌표계 기준)
+            if (config.bracketType === 'pin') {
+              // 핀 다보: 선반 바닥에서 핀 머리 반지름만큼 아래
+              bracket.position.set(xPos, -config.shelfThickness/2 - 0.005, pos.z);
+            } else {
+              // 다른 다보들: 선반 중앙 바로 아래
+              bracket.position.set(xPos, -config.shelfThickness/2, pos.z);
+            }
+            shelfGroup.add(bracket);  // 선반 그룹에 추가하여 종속성 확보
+          }
+        });
+        
+        // 우측 다보 (2개 - 앞, 뒤)
+        const rightBracketPositions = [
+          { z: (config.shelfDepth - 0.06) / 2 - bracketDepthSpacing },  // 앞쪽
+          { z: -(config.shelfDepth - 0.06) / 2 + bracketDepthSpacing }  // 뒤쪽
+        ];
+        
+        rightBracketPositions.forEach(pos => {
+          let bracket;
+          // ㄱ자와 삼각 다보는 측면 패널 안쪽 면에 딱 붙음, 나머지는 패널 안으로 파고들어감
+          const xPos = (config.bracketType === 'l-shape' || config.bracketType === 'triangle') 
+            ? config.innerWidth/2 
+            : config.innerWidth/2 - 0.005;  // 핀과 숨김형은 5mm 파고들어감
+          
+          switch (config.bracketType) {
+            case 'pin':
+              // 피스 다보 (원형 핀 - 측면 패널에 매입)
+              bracket = new THREE.Group();
+              // 핀 몸체 (나사산 부분 - 패널에 박힘)
+              const pinBodyRight = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.003, 0.003, 0.01),
+                bracketMaterial
+              );
+              pinBodyRight.rotation.z = Math.PI / 2;
+              pinBodyRight.position.x = 0.005;  // 패널 쪽으로 (오른쪽 패널 방향)
+              bracket.add(pinBodyRight);
+              // 핀 머리 (길게 돌출된 지지부)
+              const pinHeadRight = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.005, 0.005, 0.015),
+                bracketMaterial
+              );
+              pinHeadRight.rotation.z = Math.PI / 2;
+              pinHeadRight.position.x = -0.0075;  // 안쪽으로 돌출 (선반 방향)
+              bracket.add(pinHeadRight);
+              break;
+              
+            case 'l-shape':
+              // ㄱ자 다보 (L형 브래킷)
+              bracket = new THREE.Group();
+              const lVerticalRight = new THREE.Mesh(
+                new THREE.BoxGeometry(0.002, 0.025, 0.02),
+                bracketMaterial
+              );
+              lVerticalRight.position.set(-0.001, -0.0125, 0);
+              bracket.add(lVerticalRight);
+              const lHorizontalRight = new THREE.Mesh(
+                new THREE.BoxGeometry(0.025, 0.003, 0.02),
+                bracketMaterial
+              );
+              lHorizontalRight.position.set(-0.0125, -0.0015, 0);
+              bracket.add(lHorizontalRight);
+              break;
+              
+            case 'triangle':
+              // 삼각 다보 (삼각형 지지대 - 180도 회전)
+              bracket = new THREE.Group();
+              const triangleShapeRight = new THREE.Shape();
+              triangleShapeRight.moveTo(0, 0);
+              triangleShapeRight.lineTo(-0.025, 0);  // 왼쪽으로
+              triangleShapeRight.lineTo(0, -0.02);  // 아래로
+              triangleShapeRight.closePath();
+              const triangleGeometryRight = new THREE.ExtrudeGeometry(triangleShapeRight, {
+                depth: 0.015,
+                bevelEnabled: false
+              });
+              const triangleRight = new THREE.Mesh(triangleGeometryRight, bracketMaterial);
+              triangleRight.position.set(0, 0, -0.0075);
+              bracket.add(triangleRight);
+              break;
+              
+            case 'hidden':
+              // 매입형 다보 (플라스틱 삽입형)
+              bracket = new THREE.Group();
+              // 외부 슬리브
+              const sleeveRight = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.006, 0.006, 0.008),
+                new THREE.MeshStandardMaterial({
+                  color: 0xf0f0f0,
+                  metalness: 0,
+                  roughness: 0.8
+                })
+              );
+              sleeveRight.rotation.z = Math.PI / 2;
+              sleeveRight.position.x = 0.004;  // 패널 쪽으로 (오른쪽 패널 방향)
+              bracket.add(sleeveRight);
+              // 내부 핀
+              const innerPinRight = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.003, 0.003, 0.012),
+                bracketMaterial
+              );
+              innerPinRight.rotation.z = Math.PI / 2;
+              innerPinRight.position.x = -0.006;  // 안쪽으로 돌출 (선반 방향)
+              bracket.add(innerPinRight);
+              break;
+              
+            default:
+              // 기본 피스 다보
+              bracket = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.004, 0.004, 0.02),
+                bracketMaterial
+              );
+              bracket.rotation.z = Math.PI / 2;
+              bracket.position.x = -0.01;
+          }
+          
+          if (bracket) {
+            // 선반 바로 아래 위치 (shelfGroup 좌표계 기준)
+            if (config.bracketType === 'pin') {
+              // 핀 다보: 선반 바닥에서 핀 머리 반지름만큼 아래
+              bracket.position.set(xPos, -config.shelfThickness/2 - 0.005, pos.z);
+            } else {
+              // 다른 다보들: 선반 중앙 바로 아래
+              bracket.position.set(xPos, -config.shelfThickness/2, pos.z);
+            }
+            shelfGroup.add(bracket);  // 선반 그룹에 추가하여 종속성 확보
+          }
+        });
+        
+        shelfGroup.position.y = startY + spacing * (i + 1);
+        wardrobeGroup.add(shelfGroup);
+        shelves.push(shelfGroup);
+      }
+
+      updatePrice();
+    }
+
+    // 가격 계산 및 표시
+    function updatePrice() {
+      if (config.shelfCount === 0) {
+        document.getElementById('totalPrice').textContent = '₩0';
+        document.getElementById('priceDetail').textContent = '선반을 추가해주세요';
+        return;
+      }
+
+      const thickness = config.shelfThickness * 1000;  // mm로 변환
+      const panelPricePerSqm = pricing.panel[thickness];
+      
+      // 선반 1개당 면적 (㎡)
+      const shelfArea = config.innerWidth * config.shelfDepth;
+      
+      // 선반 1개당 둘레 (m)
+      const shelfPerimeter = 2 * (config.innerWidth + config.shelfDepth);
+      
+      // 총 가격 계산
+      const panelCost = shelfArea * panelPricePerSqm * config.shelfCount;
+      const edgeCost = shelfPerimeter * pricing.edge * config.shelfCount;
+      const totalCost = Math.round(panelCost + edgeCost);
+
+      // 표시
+      document.getElementById('totalPrice').textContent = `₩${totalCost.toLocaleString()}`;
+      document.getElementById('priceDetail').textContent = 
+        `선반 ${config.shelfCount}개 | ${(config.innerWidth * 1000).toFixed(0)}mm × ${(config.shelfDepth * 1000).toFixed(0)}mm × ${thickness}mm`;
+    }
+
+    // 입력 이벤트 연결
+    function setupInputHandlers() {
+      // 슬라이더와 숫자 입력 동기화
+      const syncInputs = (sliderId, numberId, configKey, scale = 0.001) => {
+        const slider = document.getElementById(sliderId);
+        const number = document.getElementById(numberId);
+        
+        slider.addEventListener('input', (e) => {
+          number.value = e.target.value;
+          config[configKey] = parseFloat(e.target.value) * scale;
+          if (configKey === 'innerWidth' || configKey === 'shelfDepth') {
+            updateWardrobe();
+          }
+          updateShelves();
+          broadcastState();
+        });
+        
+        number.addEventListener('input', (e) => {
+          slider.value = e.target.value;
+          config[configKey] = parseFloat(e.target.value) * scale;
+          if (configKey === 'innerWidth' || configKey === 'shelfDepth') {
+            updateWardrobe();
+          }
+          updateShelves();
+          broadcastState();
+        });
+      };
+
+      syncInputs('innerWidth', 'innerWidthNum', 'innerWidth');
+      syncInputs('shelfDepth', 'shelfDepthNum', 'shelfDepth');
+      syncInputs('shelfCount', 'shelfCountNum', 'shelfCount', 1);
+
+      // 선반 두께
+      document.getElementById('shelfThickness').addEventListener('change', (e) => {
+        config.shelfThickness = parseFloat(e.target.value) / 1000;
+        updateShelves();
+        broadcastState();
+      });
+
+      // 다보 타입
+      document.getElementById('bracketType').addEventListener('change', (e) => {
+        config.bracketType = e.target.value;
+        updateShelves();
+        broadcastState();
+      });
+
+      // 색상 선택
+      document.querySelectorAll('#panelColors .color-item').forEach(item => {
+        item.addEventListener('click', () => {
+          document.querySelectorAll('#panelColors .color-item').forEach(i => i.classList.remove('selected'));
+          item.classList.add('selected');
+          config.panelColor = item.dataset.color;
+          updateShelves();
+          broadcastState();
+        });
+      });
+
+      document.querySelectorAll('#edgeColors .color-item').forEach(item => {
+        item.addEventListener('click', () => {
+          document.querySelectorAll('#edgeColors .color-item').forEach(i => i.classList.remove('selected'));
+          item.classList.add('selected');
+          config.edgeColor = item.dataset.color;
+          updateShelves();
+          broadcastState();
+        });
+      });
+    }
+
+    // 초기화 함수
+    window.resetConfiguration = function() {
+      document.getElementById('innerWidth').value = 800;
+      document.getElementById('innerWidthNum').value = 800;
+      document.getElementById('shelfDepth').value = 400;
+      document.getElementById('shelfDepthNum').value = 400;
+      document.getElementById('shelfCount').value = 0;
+      document.getElementById('shelfCountNum').value = 0;
+      document.getElementById('shelfThickness').value = 18;
+      document.getElementById('bracketType').value = 'pin';
+      
+      config.innerWidth = 0.8;
+      config.shelfDepth = 0.4;
+      config.shelfCount = 0;
+      config.shelfThickness = 0.018;
+      config.bracketType = 'pin';
+      
+      updateWardrobe();
+      updateShelves();
+      broadcastState();
+    };
+
+    // PDF 다운로드 (임시)
+    window.downloadPDF = function() {
+      alert('견적서 다운로드 기능은 준비 중입니다.');
+    };
+
+    // Socket.IO 이벤트
+    function broadcastState() {
+      if (isUpdating) return;
+      
+      const state = {
+        config,
+        camera: {
+          position: camera.position.toArray(),
+          target: controls.target.toArray()
+        }
+      };
+      
+      socket.emit('state-change', state);
+    }
+
+    socket.on('state-update', (state) => {
+      isUpdating = true;
+      
+      // 설정 업데이트
+      Object.assign(config, state.config);
+      
+      // UI 업데이트
+      document.getElementById('innerWidth').value = config.innerWidth * 1000;
+      document.getElementById('innerWidthNum').value = config.innerWidth * 1000;
+      document.getElementById('shelfDepth').value = config.shelfDepth * 1000;
+      document.getElementById('shelfDepthNum').value = config.shelfDepth * 1000;
+      document.getElementById('shelfCount').value = config.shelfCount;
+      document.getElementById('shelfCountNum').value = config.shelfCount;
+      document.getElementById('shelfThickness').value = config.shelfThickness * 1000;
+      if (config.bracketType) document.getElementById('bracketType').value = config.bracketType;
+      
+      // 3D 업데이트
+      updateWardrobe();
+      updateShelves();
+      
+      // 카메라 업데이트
+      if (state.camera) {
+        camera.position.fromArray(state.camera.position);
+        controls.target.fromArray(state.camera.target);
+      }
+      
+      setTimeout(() => { isUpdating = false; }, 100);
+    });
+
+    // 애니메이션 루프
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    // 리사이즈 처리
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // 카메라 변경 시 상태 전송
+    controls.addEventListener('change', () => {
+      if (!isUpdating) {
+        broadcastState();
+      }
+    });
+
+    // 초기화
+    setupInputHandlers();
+    updateWardrobe();
+    animate();
+
+    // 초기 상태 요청
+    socket.emit('request-state');
+  </script>
+</body>
+</html>
