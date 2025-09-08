@@ -538,7 +538,7 @@
       }
       
       leftDoorGroup.position.set(-outerWidth/2, config.wardrobeHeight/2, config.shelfDepth/2);
-      leftDoorGroup.rotation.y = Math.PI * (180 - 160) / 180; // 160도 열림 (20도 회전)
+      leftDoorGroup.rotation.y = -Math.PI * 200 / 180; // 바깥쪽으로 160도 열림 (200도 회전)
       wardrobeGroup.add(leftDoorGroup);
 
       // 오른쪽 문 (160도 열림)
@@ -583,7 +583,7 @@
       }
       
       rightDoorGroup.position.set(outerWidth/2, config.wardrobeHeight/2, config.shelfDepth/2);
-      rightDoorGroup.rotation.y = -Math.PI * (180 - 160) / 180; // 160도 열림 (20도 회전)
+      rightDoorGroup.rotation.y = Math.PI * 200 / 180; // 바깥쪽으로 160도 열림 (200도 회전)
       wardrobeGroup.add(rightDoorGroup);
     }
 
