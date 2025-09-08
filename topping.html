@@ -360,15 +360,35 @@
         metalness: 0
       });
 
-      // 좌측 프레임 (걸레받이 위에 위치)
+      // 프레임 높이 계산 (하단판 위에 좌우판, 그 위에 상단판)
       const frameHeight = config.wardrobeHeight - config.baseboardHeight;
       const frameYOffset = config.baseboardHeight;
+      const sideFrameHeight = frameHeight - config.frameThickness * 2;  // 상하판 두께 제외
       
-      const leftFrame = new THREE.Mesh(
-        new THREE.BoxGeometry(config.frameThickness, frameHeight, config.shelfDepth),
+      // 하단 프레임 (걸레받이 위, 가장 먼저)
+      const bottomFrame = new THREE.Mesh(
+        new THREE.BoxGeometry(outerWidth, config.frameThickness, config.shelfDepth),
         frameMaterial
       );
-      leftFrame.position.set(-config.innerWidth/2 - config.frameThickness/2, frameHeight/2 + frameYOffset, 0);
+      bottomFrame.position.set(0, config.baseboardHeight + config.frameThickness/2, 0);
+      wardrobeGroup.add(bottomFrame);
+      
+      // 하단 프레임 엣지라인
+      const bottomFrameEdges = new THREE.EdgesGeometry(bottomFrame.geometry);
+      const bottomFrameLines = new THREE.LineSegments(bottomFrameEdges, new THREE.LineBasicMaterial({ color: 0x666666 }));
+      bottomFrameLines.position.copy(bottomFrame.position);
+      wardrobeGroup.add(bottomFrameLines);
+      
+      // 좌측 프레임 (하단판 위에 올라감)
+      const leftFrame = new THREE.Mesh(
+        new THREE.BoxGeometry(config.frameThickness, sideFrameHeight, config.shelfDepth),
+        frameMaterial
+      );
+      leftFrame.position.set(
+        -config.innerWidth/2 - config.frameThickness/2, 
+        config.baseboardHeight + config.frameThickness + sideFrameHeight/2, 
+        0
+      );
       wardrobeGroup.add(leftFrame);
       
       // 좌측 프레임 엣지라인
@@ -377,12 +397,16 @@
       leftFrameLines.position.copy(leftFrame.position);
       wardrobeGroup.add(leftFrameLines);
 
-      // 우측 프레임 (걸레받이 위에 위치)
+      // 우측 프레임 (하단판 위에 올라감)
       const rightFrame = new THREE.Mesh(
-        new THREE.BoxGeometry(config.frameThickness, frameHeight, config.shelfDepth),
+        new THREE.BoxGeometry(config.frameThickness, sideFrameHeight, config.shelfDepth),
         frameMaterial
       );
-      rightFrame.position.set(config.innerWidth/2 + config.frameThickness/2, frameHeight/2 + frameYOffset, 0);
+      rightFrame.position.set(
+        config.innerWidth/2 + config.frameThickness/2, 
+        config.baseboardHeight + config.frameThickness + sideFrameHeight/2, 
+        0
+      );
       wardrobeGroup.add(rightFrame);
       
       // 우측 프레임 엣지라인
@@ -391,7 +415,7 @@
       rightFrameLines.position.copy(rightFrame.position);
       wardrobeGroup.add(rightFrameLines);
 
-      // 상단 프레임
+      // 상단 프레임 (좌우판 위에 얹어짐)
       const topFrame = new THREE.Mesh(
         new THREE.BoxGeometry(outerWidth, config.frameThickness, config.shelfDepth),
         frameMaterial
@@ -405,23 +429,11 @@
       topFrameLines.position.copy(topFrame.position);
       wardrobeGroup.add(topFrameLines);
 
-      // 하단 프레임 (걸레받이 위)
-      const bottomFrame = new THREE.Mesh(
-        new THREE.BoxGeometry(outerWidth, config.frameThickness, config.shelfDepth),
-        frameMaterial
-      );
-      bottomFrame.position.set(0, config.baseboardHeight + config.frameThickness/2, 0);
-      wardrobeGroup.add(bottomFrame);
-      
-      // 하단 프레임 엣지라인
-      const bottomFrameEdges = new THREE.EdgesGeometry(bottomFrame.geometry);
-      const bottomFrameLines = new THREE.LineSegments(bottomFrameEdges, new THREE.LineBasicMaterial({ color: 0x666666 }));
-      bottomFrameLines.position.copy(bottomFrame.position);
-      wardrobeGroup.add(bottomFrameLines);
-
-      // 뒷판 (걸레받이 위에 위치)
+      // 뒷판 (프레임 내부에 맞춤)
+      const backPanelHeight = sideFrameHeight;  // 상하판 사이 높이
+      const backPanelWidth = config.innerWidth;  // 좌우판 사이 너비
       const backPanel = new THREE.Mesh(
-        new THREE.BoxGeometry(outerWidth, frameHeight, 0.005),
+        new THREE.BoxGeometry(backPanelWidth, backPanelHeight, 0.005),
         new THREE.MeshPhysicalMaterial({
           color: 0xe8e8e8,
           transparent: true,
@@ -429,7 +441,11 @@
           roughness: 0.9
         })
       );
-      backPanel.position.set(0, frameHeight/2 + frameYOffset, -config.shelfDepth/2);
+      backPanel.position.set(
+        0, 
+        config.baseboardHeight + config.frameThickness + backPanelHeight/2, 
+        -config.shelfDepth/2 + 0.0025
+      );
       wardrobeGroup.add(backPanel);
       
       // 뒷판 엣지라인
@@ -491,22 +507,22 @@
       frontBaseboardRight.castShadow = true;
       wardrobeGroup.add(frontBaseboardRight);
 
-      // 내부 공간 와이어프레임 (가이드라인) - 걸레받이 위 조정
+      // 내부 공간 와이어프레임 (가이드라인) - 프레임 내부 공간
       const innerGeometry = new THREE.BoxGeometry(
         config.innerWidth,
-        frameHeight - config.frameThickness * 2,
+        sideFrameHeight,
         config.shelfDepth - 0.01
       );
       const edges = new THREE.EdgesGeometry(innerGeometry);
       const lineMaterial = new THREE.LineBasicMaterial({ color: 0x999999, linewidth: 1 });
       const innerWireframe = new THREE.LineSegments(edges, lineMaterial);
-      innerWireframe.position.y = frameHeight / 2 + frameYOffset;
+      innerWireframe.position.y = config.baseboardHeight + config.frameThickness + sideFrameHeight/2;
       wardrobeGroup.add(innerWireframe);
       innerGeometry.dispose();
 
       // 문 추가 (양쪽 여닫이)
       const doorWidth = outerWidth / 2 - 0.002; // 약간의 틈
-      const doorHeight = config.wardrobeHeight - config.frameThickness * 2 - config.baseboardHeight;
+      const doorHeight = sideFrameHeight;
       const doorThickness = 0.018;
       
       const doorMaterial = new THREE.MeshPhysicalMaterial({
@@ -570,7 +586,7 @@
         leftDoorGroup.add(hingeGroup);
       }
       
-      leftDoorGroup.position.set(-outerWidth/2, frameHeight/2 + frameYOffset, config.shelfDepth/2);
+      leftDoorGroup.position.set(-outerWidth/2, config.baseboardHeight + config.frameThickness + sideFrameHeight/2, config.shelfDepth/2);
       leftDoorGroup.rotation.y = -Math.PI * 160 / 180; // 바깥쪽으로 160도 열림
       wardrobeGroup.add(leftDoorGroup);
 
@@ -615,7 +631,7 @@
         rightDoorGroup.add(hingeGroup);
       }
       
-      rightDoorGroup.position.set(outerWidth/2, frameHeight/2 + frameYOffset, config.shelfDepth/2);
+      rightDoorGroup.position.set(outerWidth/2, config.baseboardHeight + config.frameThickness + sideFrameHeight/2, config.shelfDepth/2);
       rightDoorGroup.rotation.y = Math.PI * 160 / 180; // 바깥쪽으로 160도 열림
       wardrobeGroup.add(rightDoorGroup);
     }
