@@ -150,14 +150,6 @@
         </div>
       </div>
 
-      <div class="input-group">
-        <label>옷장 외부 가로</label>
-        <div class="input-wrapper">
-          <input type="range" id="outerWidth" min="500" max="2400" value="900" step="10">
-          <input type="number" id="outerWidthNum" min="500" max="2400" value="900" step="10">
-          <span class="unit">mm</span>
-        </div>
-      </div>
 
       <div class="input-group">
         <label>선반 깊이</label>
@@ -330,13 +322,14 @@
     // 설정 값
     const config = {
       innerWidth: 0.8,  // m 단위
-      outerWidth: 0.9,
       shelfDepth: 0.4,
       wardrobeHeight: 2.0,  // 고정 높이
       shelfCount: 0,
       shelfThickness: 0.018,
       panelColor: '#FFFFFF',
-      edgeColor: '#FFFFFF'
+      edgeColor: '#FFFFFF',
+      frameThickness: 0.025,  // 옷장 프레임 두께 25mm
+      baseboardHeight: 0.08   // 걸레받이 높이 80mm
     };
 
     // 가격 계산 (원/㎡ 단위로 계산)
@@ -352,45 +345,92 @@
     // 옷장 생성/업데이트 함수
     function updateWardrobe() {
       // 기존 옷장 제거
-      if (wardrobeOuter) {
-        wardrobeGroup.remove(wardrobeOuter);
-        wardrobeOuter.geometry.dispose();
-        wardrobeOuter.material.dispose();
-      }
-      if (wardrobeInner) {
-        wardrobeGroup.remove(wardrobeInner);
-        wardrobeInner.geometry.dispose();
-        wardrobeInner.material.dispose();
-      }
+      wardrobeGroup.clear();
+      wardrobeGroup.children.forEach(child => {
+        if (child.geometry) child.geometry.dispose();
+        if (child.material) child.material.dispose();
+      });
 
-      // 옷장 외부 (반투명)
-      const outerGeometry = new THREE.BoxGeometry(
-        config.outerWidth,
-        config.wardrobeHeight,
-        config.shelfDepth
-      );
-      const outerMaterial = new THREE.MeshPhysicalMaterial({
-        color: 0xcccccc,
+      const outerWidth = config.innerWidth + config.frameThickness * 2;
+      const frameMaterial = new THREE.MeshPhysicalMaterial({
+        color: 0xf0f0f0,
         transparent: true,
-        opacity: 0.15,
+        opacity: 0.25,
+        roughness: 0.9,
+        metalness: 0
+      });
+
+      // 좌측 프레임
+      const leftFrame = new THREE.Mesh(
+        new THREE.BoxGeometry(config.frameThickness, config.wardrobeHeight, config.shelfDepth),
+        frameMaterial
+      );
+      leftFrame.position.set(-config.innerWidth/2 - config.frameThickness/2, config.wardrobeHeight/2, 0);
+      wardrobeGroup.add(leftFrame);
+
+      // 우측 프레임
+      const rightFrame = new THREE.Mesh(
+        new THREE.BoxGeometry(config.frameThickness, config.wardrobeHeight, config.shelfDepth),
+        frameMaterial
+      );
+      rightFrame.position.set(config.innerWidth/2 + config.frameThickness/2, config.wardrobeHeight/2, 0);
+      wardrobeGroup.add(rightFrame);
+
+      // 상단 프레임
+      const topFrame = new THREE.Mesh(
+        new THREE.BoxGeometry(outerWidth, config.frameThickness, config.shelfDepth),
+        frameMaterial
+      );
+      topFrame.position.set(0, config.wardrobeHeight - config.frameThickness/2, 0);
+      wardrobeGroup.add(topFrame);
+
+      // 하단 프레임
+      const bottomFrame = new THREE.Mesh(
+        new THREE.BoxGeometry(outerWidth, config.frameThickness, config.shelfDepth),
+        frameMaterial
+      );
+      bottomFrame.position.set(0, config.frameThickness/2, 0);
+      wardrobeGroup.add(bottomFrame);
+
+      // 뒷판
+      const backPanel = new THREE.Mesh(
+        new THREE.BoxGeometry(outerWidth, config.wardrobeHeight, 0.005),
+        new THREE.MeshPhysicalMaterial({
+          color: 0xe8e8e8,
+          transparent: true,
+          opacity: 0.15,
+          roughness: 0.9
+        })
+      );
+      backPanel.position.set(0, config.wardrobeHeight/2, -config.shelfDepth/2);
+      wardrobeGroup.add(backPanel);
+
+      // 걸레받이
+      const baseboardMaterial = new THREE.MeshStandardMaterial({
+        color: 0x8b7355,
         roughness: 0.8,
         metalness: 0
       });
-      wardrobeOuter = new THREE.Mesh(outerGeometry, outerMaterial);
-      wardrobeOuter.position.y = config.wardrobeHeight / 2;
-      wardrobeGroup.add(wardrobeOuter);
+      
+      const baseboard = new THREE.Mesh(
+        new THREE.BoxGeometry(outerWidth + 0.01, config.baseboardHeight, config.shelfDepth + 0.01),
+        baseboardMaterial
+      );
+      baseboard.position.set(0, config.baseboardHeight/2 - 0.01, 0);
+      baseboard.castShadow = true;
+      wardrobeGroup.add(baseboard);
 
-      // 옷장 내부 와이어프레임
+      // 내부 공간 와이어프레임 (가이드라인)
       const innerGeometry = new THREE.BoxGeometry(
         config.innerWidth,
-        config.wardrobeHeight - 0.1,
-        config.shelfDepth - 0.05
+        config.wardrobeHeight - config.frameThickness * 2,
+        config.shelfDepth - 0.01
       );
       const edges = new THREE.EdgesGeometry(innerGeometry);
-      const lineMaterial = new THREE.LineBasicMaterial({ color: 0x666666, linewidth: 1 });
-      wardrobeInner = new THREE.LineSegments(edges, lineMaterial);
-      wardrobeInner.position.y = config.wardrobeHeight / 2;
-      wardrobeGroup.add(wardrobeInner);
+      const lineMaterial = new THREE.LineBasicMaterial({ color: 0x999999, linewidth: 1 });
+      const innerWireframe = new THREE.LineSegments(edges, lineMaterial);
+      innerWireframe.position.y = config.wardrobeHeight / 2;
+      wardrobeGroup.add(innerWireframe);
       innerGeometry.dispose();
     }
 
@@ -523,7 +563,7 @@
         slider.addEventListener('input', (e) => {
           number.value = e.target.value;
           config[configKey] = parseFloat(e.target.value) * scale;
-          if (configKey === 'innerWidth' || configKey === 'outerWidth' || configKey === 'shelfDepth') {
+          if (configKey === 'innerWidth' || configKey === 'shelfDepth') {
             updateWardrobe();
           }
           updateShelves();
@@ -533,7 +573,7 @@
         number.addEventListener('input', (e) => {
           slider.value = e.target.value;
           config[configKey] = parseFloat(e.target.value) * scale;
-          if (configKey === 'innerWidth' || configKey === 'outerWidth' || configKey === 'shelfDepth') {
+          if (configKey === 'innerWidth' || configKey === 'shelfDepth') {
             updateWardrobe();
           }
           updateShelves();
@@ -542,7 +582,6 @@
       };
 
       syncInputs('innerWidth', 'innerWidthNum', 'innerWidth');
-      syncInputs('outerWidth', 'outerWidthNum', 'outerWidth');
       syncInputs('shelfDepth', 'shelfDepthNum', 'shelfDepth');
       syncInputs('shelfCount', 'shelfCountNum', 'shelfCount', 1);
 
@@ -579,8 +618,6 @@
     window.resetConfiguration = function() {
       document.getElementById('innerWidth').value = 800;
       document.getElementById('innerWidthNum').value = 800;
-      document.getElementById('outerWidth').value = 900;
-      document.getElementById('outerWidthNum').value = 900;
       document.getElementById('shelfDepth').value = 400;
       document.getElementById('shelfDepthNum').value = 400;
       document.getElementById('shelfCount').value = 0;
@@ -588,7 +625,6 @@
       document.getElementById('shelfThickness').value = 18;
       
       config.innerWidth = 0.8;
-      config.outerWidth = 0.9;
       config.shelfDepth = 0.4;
       config.shelfCount = 0;
       config.shelfThickness = 0.018;
@@ -627,8 +663,6 @@
       // UI 업데이트
       document.getElementById('innerWidth').value = config.innerWidth * 1000;
       document.getElementById('innerWidthNum').value = config.innerWidth * 1000;
-      document.getElementById('outerWidth').value = config.outerWidth * 1000;
-      document.getElementById('outerWidthNum').value = config.outerWidth * 1000;
       document.getElementById('shelfDepth').value = config.shelfDepth * 1000;
       document.getElementById('shelfDepthNum').value = config.shelfDepth * 1000;
       document.getElementById('shelfCount').value = config.shelfCount;
