@@ -405,9 +405,11 @@
       backPanel.position.set(0, config.wardrobeHeight/2, -config.shelfDepth/2);
       wardrobeGroup.add(backPanel);
 
-      // 걸레받이
-      const baseboardMaterial = new THREE.MeshStandardMaterial({
+      // 걸레받이 (반투명)
+      const baseboardMaterial = new THREE.MeshPhysicalMaterial({
         color: 0x8b7355,
+        transparent: true,
+        opacity: 0.3,
         roughness: 0.8,
         metalness: 0
       });
@@ -432,6 +434,121 @@
       innerWireframe.position.y = config.wardrobeHeight / 2;
       wardrobeGroup.add(innerWireframe);
       innerGeometry.dispose();
+
+      // 문 추가 (양쪽 여닫이)
+      const doorWidth = outerWidth / 2 - 0.002; // 약간의 틈
+      const doorHeight = config.wardrobeHeight - config.frameThickness * 2 - config.baseboardHeight;
+      const doorThickness = 0.018;
+      
+      const doorMaterial = new THREE.MeshPhysicalMaterial({
+        color: 0xfafafa,
+        transparent: true,
+        opacity: 0.15,
+        roughness: 0.2,
+        metalness: 0,
+        side: THREE.DoubleSide
+      });
+
+      // 왼쪽 문 (160도 열림)
+      const leftDoorGroup = new THREE.Group();
+      const leftDoor = new THREE.Mesh(
+        new THREE.BoxGeometry(doorWidth, doorHeight, doorThickness),
+        doorMaterial
+      );
+      leftDoor.position.x = doorWidth / 2;
+      leftDoorGroup.add(leftDoor);
+      
+      // 왼쪽 문 손잡이
+      const handleMaterial = new THREE.MeshStandardMaterial({
+        color: 0x444444,
+        metalness: 0.8,
+        roughness: 0.2
+      });
+      const leftHandle = new THREE.Mesh(
+        new THREE.BoxGeometry(0.005, 0.08, 0.02),
+        handleMaterial
+      );
+      leftHandle.position.set(doorWidth - 0.03, 0, doorThickness/2 + 0.01);
+      leftDoorGroup.add(leftHandle);
+      
+      // 왼쪽 경첩들 (3개)
+      const hingeMaterial = new THREE.MeshStandardMaterial({
+        color: 0x666666,
+        metalness: 0.9,
+        roughness: 0.1
+      });
+      
+      for (let i = 0; i < 3; i++) {
+        const hingeGroup = new THREE.Group();
+        
+        // 경첩 고정부
+        const hingeBase = new THREE.Mesh(
+          new THREE.BoxGeometry(0.015, 0.04, 0.003),
+          hingeMaterial
+        );
+        hingeBase.position.set(-0.0075, (i - 1) * doorHeight * 0.35, 0);
+        
+        // 경첩 회전부
+        const hingePivot = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.003, 0.003, 0.01),
+          hingeMaterial
+        );
+        hingePivot.rotation.x = Math.PI / 2;
+        hingePivot.position.set(0, (i - 1) * doorHeight * 0.35, 0);
+        
+        hingeGroup.add(hingeBase);
+        hingeGroup.add(hingePivot);
+        leftDoorGroup.add(hingeGroup);
+      }
+      
+      leftDoorGroup.position.set(-outerWidth/2, config.wardrobeHeight/2, config.shelfDepth/2);
+      leftDoorGroup.rotation.y = Math.PI * 160 / 180; // 160도 열림
+      wardrobeGroup.add(leftDoorGroup);
+
+      // 오른쪽 문 (160도 열림)
+      const rightDoorGroup = new THREE.Group();
+      const rightDoor = new THREE.Mesh(
+        new THREE.BoxGeometry(doorWidth, doorHeight, doorThickness),
+        doorMaterial
+      );
+      rightDoor.position.x = -doorWidth / 2;
+      rightDoorGroup.add(rightDoor);
+      
+      // 오른쪽 문 손잡이
+      const rightHandle = new THREE.Mesh(
+        new THREE.BoxGeometry(0.005, 0.08, 0.02),
+        handleMaterial
+      );
+      rightHandle.position.set(-doorWidth + 0.03, 0, doorThickness/2 + 0.01);
+      rightDoorGroup.add(rightHandle);
+      
+      // 오른쪽 경첩들 (3개)
+      for (let i = 0; i < 3; i++) {
+        const hingeGroup = new THREE.Group();
+        
+        // 경첩 고정부
+        const hingeBase = new THREE.Mesh(
+          new THREE.BoxGeometry(0.015, 0.04, 0.003),
+          hingeMaterial
+        );
+        hingeBase.position.set(0.0075, (i - 1) * doorHeight * 0.35, 0);
+        
+        // 경첩 회전부
+        const hingePivot = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.003, 0.003, 0.01),
+          hingeMaterial
+        );
+        hingePivot.rotation.x = Math.PI / 2;
+        hingePivot.position.set(0, (i - 1) * doorHeight * 0.35, 0);
+        
+        hingeGroup.add(hingeBase);
+        hingeGroup.add(hingePivot);
+        rightDoorGroup.add(hingeGroup);
+      }
+      
+      rightDoorGroup.position.set(outerWidth/2, config.wardrobeHeight/2, config.shelfDepth/2);
+      rightDoorGroup.rotation.y = -Math.PI * 160 / 180; // 160도 열림
+      wardrobeGroup.add(rightDoorGroup);
     }
 
     // 선반 업데이트 함수
