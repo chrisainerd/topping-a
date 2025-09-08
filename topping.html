@@ -735,20 +735,17 @@
         rightEdge.position.x = (config.innerWidth - 0.02) / 2 + edgeThickness / 2;
         shelfGroup.add(rightEdge);
         
-        // 다보 추가 (양쪽 측면 패널에 고정, 선반을 받치는 구조)
+        // 다보 추가 (선반 바로 아래, 측면 패널에서 돌출)
         const bracketMaterial = new THREE.MeshStandardMaterial({
           color: 0x888888,
           metalness: 0.6,
           roughness: 0.3
         });
         
-        // 선반 위치
-        const shelfY = startY + spacing * (i + 1);
-        
-        // 다보는 측면 패널에 부착되어 선반을 아래에서 받침
+        // 다보는 선반 바로 아래 위치
         const bracketDepthSpacing = 0.08; // 앞뒤에서 8cm 떨어진 위치
         
-        // 좌측 패널에 붙는 다보 (2개 - 앞, 뒤)
+        // 좌측 다보 (2개 - 앞, 뒤)
         const leftBracketPositions = [
           { z: (config.shelfDepth - 0.06) / 2 - bracketDepthSpacing },  // 앞쪽
           { z: -(config.shelfDepth - 0.06) / 2 + bracketDepthSpacing }  // 뒤쪽
@@ -760,7 +757,7 @@
           
           switch (config.bracketType) {
             case 'pin':
-              // 피스 다보 (원형 핀이 측면에서 돌출)
+              // 피스 다보 (원형 핀)
               bracket = new THREE.Group();
               const pinLeft = new THREE.Mesh(
                 new THREE.CylinderGeometry(0.004, 0.004, 0.02),
@@ -772,7 +769,7 @@
               break;
               
             case 'l-shape':
-              // ㄱ자 다보 (L형 브래킷이 측면에 부착)
+              // ㄱ자 다보 (L형 브래킷)
               bracket = new THREE.Group();
               const lVerticalLeft = new THREE.Mesh(
                 new THREE.BoxGeometry(0.002, 0.025, 0.02),
@@ -789,7 +786,7 @@
               break;
               
             case 'triangle':
-              // 삼각 다보 (삼각형 지지대가 측면에서 돌출)
+              // 삼각 다보 (삼각형 지지대)
               bracket = new THREE.Group();
               const triangleShapeLeft = new THREE.Shape();
               triangleShapeLeft.moveTo(0, 0);
@@ -806,7 +803,7 @@
               break;
               
             case 'hidden':
-              // 매입형 다보 (측면에 작은 원형 돌출)
+              // 매입형 다보 (작은 원형)
               bracket = new THREE.Mesh(
                 new THREE.CylinderGeometry(0.005, 0.005, 0.01),
                 bracketMaterial
@@ -816,7 +813,7 @@
               break;
               
             case 'decorative':
-              // 장식형 다보 (곡선형 브래킷)
+              // 장식형 다보 (곡선형)
               bracket = new THREE.Group();
               const decorBaseLeft = new THREE.Mesh(
                 new THREE.BoxGeometry(0.003, 0.03, 0.025),
@@ -833,7 +830,6 @@
               break;
               
             default:
-              // 기본값은 피스 다보
               bracket = new THREE.Mesh(
                 new THREE.CylinderGeometry(0.004, 0.004, 0.02),
                 bracketMaterial
@@ -843,12 +839,13 @@
           }
           
           if (bracket) {
-            bracket.position.set(xPos, shelfY - config.shelfThickness/2, pos.z);
-            wardrobeGroup.add(bracket);  // shelfGroup이 아닌 wardrobeGroup에 직접 추가
+            // 선반 바로 아래 위치 (shelfGroup 좌표계 기준)
+            bracket.position.set(xPos, -config.shelfThickness/2, pos.z);
+            shelfGroup.add(bracket);  // 선반 그룹에 추가하여 종속성 확보
           }
         });
         
-        // 우측 패널에 붙는 다보 (2개 - 앞, 뒤)
+        // 우측 다보 (2개 - 앞, 뒤)
         const rightBracketPositions = [
           { z: (config.shelfDepth - 0.06) / 2 - bracketDepthSpacing },  // 앞쪽
           { z: -(config.shelfDepth - 0.06) / 2 + bracketDepthSpacing }  // 뒤쪽
@@ -860,7 +857,7 @@
           
           switch (config.bracketType) {
             case 'pin':
-              // 피스 다보 (원형 핀이 측면에서 돌출)
+              // 피스 다보 (원형 핀)
               bracket = new THREE.Group();
               const pinRight = new THREE.Mesh(
                 new THREE.CylinderGeometry(0.004, 0.004, 0.02),
@@ -872,7 +869,7 @@
               break;
               
             case 'l-shape':
-              // ㄱ자 다보 (L형 브래킷이 측면에 부착)
+              // ㄱ자 다보 (L형 브래킷)
               bracket = new THREE.Group();
               const lVerticalRight = new THREE.Mesh(
                 new THREE.BoxGeometry(0.002, 0.025, 0.02),
@@ -889,7 +886,7 @@
               break;
               
             case 'triangle':
-              // 삼각 다보 (삼각형 지지대가 측면에서 돌출)
+              // 삼각 다보 (삼각형 지지대)
               bracket = new THREE.Group();
               const triangleShapeRight = new THREE.Shape();
               triangleShapeRight.moveTo(0, 0);
@@ -906,7 +903,7 @@
               break;
               
             case 'hidden':
-              // 매입형 다보 (측면에 작은 원형 돌출)
+              // 매입형 다보 (작은 원형)
               bracket = new THREE.Mesh(
                 new THREE.CylinderGeometry(0.005, 0.005, 0.01),
                 bracketMaterial
@@ -916,7 +913,7 @@
               break;
               
             case 'decorative':
-              // 장식형 다보 (곡선형 브래킷)
+              // 장식형 다보 (곡선형)
               bracket = new THREE.Group();
               const decorBaseRight = new THREE.Mesh(
                 new THREE.BoxGeometry(0.003, 0.03, 0.025),
@@ -933,7 +930,6 @@
               break;
               
             default:
-              // 기본값은 피스 다보
               bracket = new THREE.Mesh(
                 new THREE.CylinderGeometry(0.004, 0.004, 0.02),
                 bracketMaterial
@@ -943,8 +939,9 @@
           }
           
           if (bracket) {
-            bracket.position.set(xPos, shelfY - config.shelfThickness/2, pos.z);
-            wardrobeGroup.add(bracket);  // shelfGroup이 아닌 wardrobeGroup에 직접 추가
+            // 선반 바로 아래 위치 (shelfGroup 좌표계 기준)
+            bracket.position.set(xPos, -config.shelfThickness/2, pos.z);
+            shelfGroup.add(bracket);  // 선반 그룹에 추가하여 종속성 확보
           }
         });
         
