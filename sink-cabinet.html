@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
+  <title>싱크대 하부장 레일 구성 시스템</title>
+  <style>
+    :root{
+      --panel-bg: rgba(255,255,255,.95);
+      --panel-bd: rgba(0,0,0,.12);
+      --text:#111; --sub:#666; --accent:#2b6cb0; 
+      --shadow:0 8px 28px rgba(0,0,0,.15);
+      --selected-cell: rgba(43, 108, 176, 0.3);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html, body { height:100%; overflow:hidden; background:#f5f5f5; color:var(--text); 
+      font-family: system-ui, -apple-system, sans-serif; }
+    canvas { display:block; width:100vw; height:100vh; }
+
+    /* 상단 타이틀 바 */
+    #header {
+      position:fixed; left:20px; top:20px; z-index:40;
+      background:var(--panel-bg); padding:12px 20px; border-radius:12px;
+      border:1px solid var(--panel-bd); backdrop-filter: blur(6px); 
+      box-shadow: var(--shadow);
+    }
+    #header h1 { font-size:18px; font-weight:700; color:#0b1726; }
+    #header p { font-size:12px; color:var(--sub); margin-top:2px; }
+
+    /* 우측 설정 패널 */
+    #configPanel {
+      position:fixed; right:20px; top:20px; z-index:30;
+      background:var(--panel-bg); width:320px; padding:20px; border-radius:12px;
+      border:1px solid var(--panel-bd); box-shadow: var(--shadow);
+      max-height: calc(100vh - 40px); overflow-y:auto;
+    }
+
+    .section { margin-bottom:24px; }
+    .section-title { 
+      font-size:14px; font-weight:700; color:#0b1726; 
+      margin-bottom:12px; padding-bottom:8px; 
+      border-bottom:1px solid rgba(0,0,0,.08);
+    }
+
+    .input-group { margin-bottom:16px; }
+    .input-group label { 
+      display:block; font-size:12px; color:var(--sub); 
+      margin-bottom:6px; font-weight:500;
+    }
+    .input-wrapper {
+      display:flex; align-items:center; gap:8px;
+    }
+    .input-wrapper input[type="range"] { flex:1; }
+    .input-wrapper input[type="number"] { 
+      width:80px; padding:6px 8px;
+      border:1px solid var(--panel-bd); border-radius:6px;
+      font-size:13px;
+    }
+
+    .btn {
+      padding:8px 16px; border-radius:8px; font-size:13px;
+      font-weight:500; cursor:pointer; transition:all 0.2s;
+      border:1px solid var(--panel-bd);
+    }
+    .btn-primary {
+      background:var(--accent); color:white; border-color:var(--accent);
+    }
+    .btn-primary:hover { background:#245a94; }
+    .btn-secondary {
+      background:white; color:var(--text);
+    }
+    .btn-secondary:hover { background:#f0f0f0; }
+
+    /* 셀 정보 표시 */
+    #cellInfo {
+      padding: 12px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 12px;
+    }
+    #cellInfo.hidden { display: none; }
+    .cell-info-item { 
+      margin-bottom: 4px;
+      color: var(--sub);
+    }
+
+    /* 가격 표시 */
+    .price-display {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 12px;
+      margin-top: 20px;
+    }
+    .price-label { font-size: 12px; opacity: 0.9; margin-bottom: 4px; }
+    .price-value { font-size: 24px; font-weight: bold; }
+    .price-detail { font-size: 11px; opacity: 0.8; margin-top: 8px; }
+
+    /* 액션 버튼 */
+    .action-buttons {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .action-buttons .btn { flex: 1; }
+  </style>
+</head>
+<body>
+  <!-- 헤더 -->
+  <div id="header">
+    <h1>싱크대 하부장 설계</h1>
+    <p>맞춤형 수납 레일 시스템</p>
+  </div>
+
+  <!-- 설정 패널 -->
+  <div id="configPanel">
+    <!-- 하부장 크기 설정 -->
+    <div class="section">
+      <div class="section-title">하부장 크기</div>
+      
+      <div class="input-group">
+        <label>가로 (mm)</label>
+        <div class="input-wrapper">
+          <input id="cabinetWidth" type="range" min="400" max="1200" value="800" step="10">
+          <input id="cabinetWidthNum" type="number" min="400" max="1200" value="800" step="10">
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>높이 (mm)</label>
+        <div class="input-wrapper">
+          <input id="cabinetHeight" type="range" min="400" max="800" value="600" step="10">
+          <input id="cabinetHeightNum" type="number" min="400" max="800" value="600" step="10">
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>깊이 (mm)</label>
+        <div class="input-wrapper">
+          <input id="cabinetDepth" type="range" min="400" max="600" value="500" step="10">
+          <input id="cabinetDepthNum" type="number" min="400" max="600" value="500" step="10">
+        </div>
+      </div>
+    </div>
+
+    <!-- 칸 분할 -->
+    <div class="section">
+      <div class="section-title">칸 분할</div>
+      
+      <div id="cellInfo" class="hidden">
+        <div class="cell-info-item">선택된 칸: <span id="selectedCellId">-</span></div>
+        <div class="cell-info-item">크기: <span id="selectedCellSize">-</span></div>
+      </div>
+
+      <div class="input-group">
+        <label>선택한 칸 분할</label>
+        <div class="action-buttons">
+          <button id="divideHorizontal" class="btn btn-secondary">가로 분할</button>
+          <button id="divideVertical" class="btn btn-secondary">세로 분할</button>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>레일 관리</label>
+        <div class="action-buttons">
+          <button id="addRail" class="btn btn-secondary">레일 추가</button>
+          <button id="removeRail" class="btn btn-secondary">레일 제거</button>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <div class="action-buttons">
+          <button id="resetCell" class="btn btn-secondary">칸 초기화</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 가격 표시 영역 -->
+    <div class="price-display">
+      <div class="price-label">총 견적</div>
+      <div class="price-value" id="totalPrice">₩0</div>
+      <div class="price-detail" id="priceDetail">하부장 구성을 시작하세요</div>
+    </div>
+
+    <!-- 액션 버튼 -->
+    <div class="action-buttons">
+      <button class="btn btn-secondary" onclick="resetConfiguration()">초기화</button>
+      <button class="btn btn-primary" onclick="orderProduct()">주문하기</button>
+    </div>
+  </div>
+
+  <!-- Three.js 라이브러리 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r124/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.124.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.124.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+
+  <script>
+    // Socket.IO 연결
+    const socket = io();
+    let isUpdating = false;
+
+    // Three.js 씬 설정
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf5f5f5);
+    
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(1.5, 1.5, 2.5);
+    
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    document.body.appendChild(renderer.domElement);
+    
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    
+    // 조명
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
+    
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.4);
+    directionalLight.position.set(5, 5, 5);
+    directionalLight.castShadow = true;
+    scene.add(directionalLight);
+
+    // 바닥
+    const floorGeometry = new THREE.PlaneGeometry(10, 10);
+    const floorMaterial = new THREE.MeshStandardMaterial({ color: 0xe0e0e0 });
+    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = 0;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    // 하부장 그룹
+    const cabinetGroup = new THREE.Group();
+    scene.add(cabinetGroup);
+
+    // 설정 값
+    const config = {
+      width: 0.8,  // m 단위
+      height: 0.6,
+      depth: 0.5,
+      panelThickness: 0.018
+    };
+
+    // 셀 구조 (재귀적 구조)
+    class Cell {
+      constructor(x, y, width, height, parent = null) {
+        this.id = Math.random().toString(36).substr(2, 9);
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+        this.parent = parent;
+        this.children = [];
+        this.hasRail = false;
+        this.mesh = null;
+        this.railMesh = null;
+      }
+
+      divide(direction) {
+        if (this.children.length > 0) return; // 이미 분할된 경우
+
+        if (direction === 'horizontal') {
+          const halfHeight = this.height / 2;
+          this.children.push(
+            new Cell(this.x, this.y, this.width, halfHeight, this),
+            new Cell(this.x, this.y + halfHeight, this.width, halfHeight, this)
+          );
+        } else if (direction === 'vertical') {
+          const halfWidth = this.width / 2;
+          this.children.push(
+            new Cell(this.x, this.y, halfWidth, this.height, this),
+            new Cell(this.x + halfWidth, this.y, halfWidth, this.height, this)
+          );
+        }
+      }
+
+      getLeafCells() {
+        if (this.children.length === 0) {
+          return [this];
+        }
+        return this.children.flatMap(child => child.getLeafCells());
+      }
+
+      findCell(id) {
+        if (this.id === id) return this;
+        for (const child of this.children) {
+          const found = child.findCell(id);
+          if (found) return found;
+        }
+        return null;
+      }
+    }
+
+    // 루트 셀
+    let rootCell = new Cell(0, 0, config.width, config.height);
+    let selectedCell = null;
+
+    // Raycaster for selection
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    // 하부장 업데이트
+    function updateCabinet() {
+      // 기존 메시 제거
+      cabinetGroup.clear();
+
+      // 프레임 생성
+      const frameMaterial = new THREE.MeshStandardMaterial({
+        color: 0xf0f0f0,
+        roughness: 0.7,
+        metalness: 0.1
+      });
+
+      // 측면 패널
+      const sidePanelGeometry = new THREE.BoxGeometry(
+        config.panelThickness,
+        config.height,
+        config.depth
+      );
+
+      // 좌측 패널
+      const leftPanel = new THREE.Mesh(sidePanelGeometry, frameMaterial);
+      leftPanel.position.x = -config.width / 2 - config.panelThickness / 2;
+      leftPanel.castShadow = true;
+      leftPanel.receiveShadow = true;
+      cabinetGroup.add(leftPanel);
+
+      // 우측 패널
+      const rightPanel = new THREE.Mesh(sidePanelGeometry, frameMaterial);
+      rightPanel.position.x = config.width / 2 + config.panelThickness / 2;
+      rightPanel.castShadow = true;
+      rightPanel.receiveShadow = true;
+      cabinetGroup.add(rightPanel);
+
+      // 상단 패널
+      const topPanelGeometry = new THREE.BoxGeometry(
+        config.width + config.panelThickness * 2,
+        config.panelThickness,
+        config.depth
+      );
+      const topPanel = new THREE.Mesh(topPanelGeometry, frameMaterial);
+      topPanel.position.y = config.height / 2 + config.panelThickness / 2;
+      topPanel.castShadow = true;
+      topPanel.receiveShadow = true;
+      cabinetGroup.add(topPanel);
+
+      // 하단 패널
+      const bottomPanel = new THREE.Mesh(topPanelGeometry, frameMaterial);
+      bottomPanel.position.y = -config.height / 2 - config.panelThickness / 2;
+      bottomPanel.castShadow = true;
+      bottomPanel.receiveShadow = true;
+      cabinetGroup.add(bottomPanel);
+
+      // 후면 패널
+      const backPanelGeometry = new THREE.BoxGeometry(
+        config.width,
+        config.height,
+        config.panelThickness
+      );
+      const backPanel = new THREE.Mesh(backPanelGeometry, frameMaterial);
+      backPanel.position.z = -config.depth / 2 - config.panelThickness / 2;
+      backPanel.castShadow = true;
+      backPanel.receiveShadow = true;
+      cabinetGroup.add(backPanel);
+
+      // 셀 렌더링
+      renderCells();
+      
+      // 가격 업데이트
+      updatePrice();
+    }
+
+    // 셀 렌더링
+    function renderCells() {
+      const leafCells = rootCell.getLeafCells();
+      
+      leafCells.forEach(cell => {
+        // 셀 경계 표시
+        const cellMaterial = new THREE.MeshStandardMaterial({
+          color: selectedCell === cell ? 0x2b6cb0 : 0xffffff,
+          transparent: true,
+          opacity: selectedCell === cell ? 0.3 : 0.1,
+          side: THREE.DoubleSide
+        });
+
+        const cellGeometry = new THREE.PlaneGeometry(cell.width, cell.height);
+        const cellMesh = new THREE.Mesh(cellGeometry, cellMaterial);
+        
+        // 위치 계산 (셀 좌표를 3D 좌표로 변환)
+        cellMesh.position.x = cell.x + cell.width / 2 - config.width / 2;
+        cellMesh.position.y = cell.y + cell.height / 2 - config.height / 2;
+        cellMesh.position.z = config.depth / 2;
+        
+        cellMesh.userData = { cellId: cell.id };
+        cell.mesh = cellMesh;
+        cabinetGroup.add(cellMesh);
+
+        // 셀 경계선
+        const edges = new THREE.EdgesGeometry(cellGeometry);
+        const line = new THREE.LineSegments(
+          edges,
+          new THREE.LineBasicMaterial({ color: 0x666666 })
+        );
+        line.position.copy(cellMesh.position);
+        cabinetGroup.add(line);
+
+        // 레일 렌더링
+        if (cell.hasRail) {
+          renderRail(cell);
+        }
+      });
+    }
+
+    // 레일 렌더링
+    function renderRail(cell) {
+      // 레일을 간단한 박스로 시뮬레이션
+      const railMaterial = new THREE.MeshStandardMaterial({
+        color: 0x888888,
+        metalness: 0.7,
+        roughness: 0.3
+      });
+
+      // 하단 레일
+      const railGeometry = new THREE.BoxGeometry(
+        cell.width - 0.02,
+        0.03,
+        0.45 // 레일 깊이
+      );
+      
+      const railMesh = new THREE.Mesh(railGeometry, railMaterial);
+      railMesh.position.x = cell.x + cell.width / 2 - config.width / 2;
+      railMesh.position.y = cell.y - config.height / 2 + 0.015;
+      railMesh.position.z = 0;
+      
+      railMesh.castShadow = true;
+      railMesh.receiveShadow = true;
+      cell.railMesh = railMesh;
+      cabinetGroup.add(railMesh);
+
+      // 레일 가이드 (양쪽)
+      const guideGeometry = new THREE.BoxGeometry(0.01, 0.02, 0.45);
+      
+      const leftGuide = new THREE.Mesh(guideGeometry, railMaterial);
+      leftGuide.position.x = cell.x - config.width / 2 + 0.005;
+      leftGuide.position.y = cell.y - config.height / 2 + 0.01;
+      leftGuide.position.z = 0;
+      cabinetGroup.add(leftGuide);
+
+      const rightGuide = new THREE.Mesh(guideGeometry, railMaterial);
+      rightGuide.position.x = cell.x + cell.width - config.width / 2 - 0.005;
+      rightGuide.position.y = cell.y - config.height / 2 + 0.01;
+      rightGuide.position.z = 0;
+      cabinetGroup.add(rightGuide);
+    }
+
+    // 마우스 클릭 이벤트
+    function onMouseClick(event) {
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      
+      const leafCells = rootCell.getLeafCells();
+      const cellMeshes = leafCells.map(cell => cell.mesh).filter(mesh => mesh);
+      const intersects = raycaster.intersectObjects(cellMeshes);
+
+      if (intersects.length > 0) {
+        const cellId = intersects[0].object.userData.cellId;
+        const cell = rootCell.findCell(cellId);
+        
+        if (cell) {
+          selectedCell = cell;
+          updateCellInfo();
+          renderCells();
+        }
+      }
+    }
+
+    // 셀 정보 업데이트
+    function updateCellInfo() {
+      const cellInfo = document.getElementById('cellInfo');
+      
+      if (selectedCell) {
+        cellInfo.classList.remove('hidden');
+        document.getElementById('selectedCellId').textContent = selectedCell.id.substr(0, 8);
+        document.getElementById('selectedCellSize').textContent = 
+          `${Math.round(selectedCell.width * 1000)}mm × ${Math.round(selectedCell.height * 1000)}mm`;
+      } else {
+        cellInfo.classList.add('hidden');
+      }
+    }
+
+    // 가로 분할
+    document.getElementById('divideHorizontal').addEventListener('click', () => {
+      if (selectedCell && selectedCell.children.length === 0) {
+        selectedCell.divide('horizontal');
+        selectedCell = null;
+        updateCellInfo();
+        updateCabinet();
+      }
+    });
+
+    // 세로 분할
+    document.getElementById('divideVertical').addEventListener('click', () => {
+      if (selectedCell && selectedCell.children.length === 0) {
+        selectedCell.divide('vertical');
+        selectedCell = null;
+        updateCellInfo();
+        updateCabinet();
+      }
+    });
+
+    // 레일 추가
+    document.getElementById('addRail').addEventListener('click', () => {
+      if (selectedCell && selectedCell.children.length === 0) {
+        selectedCell.hasRail = true;
+        updateCabinet();
+      }
+    });
+
+    // 레일 제거
+    document.getElementById('removeRail').addEventListener('click', () => {
+      if (selectedCell) {
+        selectedCell.hasRail = false;
+        updateCabinet();
+      }
+    });
+
+    // 칸 초기화
+    document.getElementById('resetCell').addEventListener('click', () => {
+      rootCell = new Cell(0, 0, config.width, config.height);
+      selectedCell = null;
+      updateCellInfo();
+      updateCabinet();
+    });
+
+    // 가격 계산
+    function updatePrice() {
+      const leafCells = rootCell.getLeafCells();
+      const railCount = leafCells.filter(cell => cell.hasRail).length;
+      
+      const basePrice = 150000; // 기본 가격
+      const railPrice = 35000; // 레일당 가격
+      const dividerPrice = 15000; // 칸막이당 가격
+      
+      const dividerCount = leafCells.length - 1;
+      const totalPrice = basePrice + (railCount * railPrice) + (dividerCount * dividerPrice);
+      
+      document.getElementById('totalPrice').textContent = `₩${totalPrice.toLocaleString()}`;
+      document.getElementById('priceDetail').textContent = 
+        `칸 ${leafCells.length}개 | 레일 ${railCount}개`;
+    }
+
+    // 입력 이벤트 연결
+    function setupInputHandlers() {
+      // 슬라이더와 숫자 입력 동기화
+      const syncInputs = (sliderId, numberId, configKey, scale = 0.001) => {
+        const slider = document.getElementById(sliderId);
+        const number = document.getElementById(numberId);
+        
+        slider.addEventListener('input', (e) => {
+          number.value = e.target.value;
+          config[configKey] = parseFloat(e.target.value) * scale;
+          rootCell = new Cell(0, 0, config.width, config.height);
+          selectedCell = null;
+          updateCellInfo();
+          updateCabinet();
+        });
+        
+        number.addEventListener('input', (e) => {
+          slider.value = e.target.value;
+          config[configKey] = parseFloat(e.target.value) * scale;
+          rootCell = new Cell(0, 0, config.width, config.height);
+          selectedCell = null;
+          updateCellInfo();
+          updateCabinet();
+        });
+      };
+
+      syncInputs('cabinetWidth', 'cabinetWidthNum', 'width');
+      syncInputs('cabinetHeight', 'cabinetHeightNum', 'height');
+      syncInputs('cabinetDepth', 'cabinetDepthNum', 'depth');
+    }
+
+    // 초기화 함수
+    window.resetConfiguration = function() {
+      document.getElementById('cabinetWidth').value = 800;
+      document.getElementById('cabinetWidthNum').value = 800;
+      document.getElementById('cabinetHeight').value = 600;
+      document.getElementById('cabinetHeightNum').value = 600;
+      document.getElementById('cabinetDepth').value = 500;
+      document.getElementById('cabinetDepthNum').value = 500;
+      
+      config.width = 0.8;
+      config.height = 0.6;
+      config.depth = 0.5;
+      
+      rootCell = new Cell(0, 0, config.width, config.height);
+      selectedCell = null;
+      updateCellInfo();
+      updateCabinet();
+    };
+
+    // 주문하기
+    window.orderProduct = function() {
+      const leafCells = rootCell.getLeafCells();
+      if (leafCells.length === 1 && !leafCells[0].hasRail) {
+        alert('칸을 분할하거나 레일을 추가해주세요.');
+        return;
+      }
+      window.open('https://wedraw.kr/bbs/register.php', '_blank');
+    };
+
+    // 애니메이션 루프
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    // 리사이즈 처리
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // 마우스 이벤트
+    window.addEventListener('click', onMouseClick, false);
+
+    // 초기화
+    setupInputHandlers();
+    updateCabinet();
+    animate();
+  </script>
+</body>
+</html>
